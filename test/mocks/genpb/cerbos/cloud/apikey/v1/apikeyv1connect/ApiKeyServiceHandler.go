@@ -10,8 +10,8 @@ package mockapikeyv1connect
 import (
 	"context"
 
-	"connectrpc.com/connect"
 	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/apikey/v1"
+	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/apikey/v1/apikeyv1connect"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -52,27 +52,27 @@ func (_m *ApiKeyServiceHandler) EXPECT() *ApiKeyServiceHandler_Expecter {
 }
 
 // IssueAccessToken provides a mock function for the type ApiKeyServiceHandler
-func (_mock *ApiKeyServiceHandler) IssueAccessToken(context1 context.Context, request *connect.Request[apikeyv1.IssueAccessTokenRequest]) (*connect.Response[apikeyv1.IssueAccessTokenResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *ApiKeyServiceHandler) IssueAccessToken(context1 context.Context, issueAccessTokenRequest *apikeyv1.IssueAccessTokenRequest) (*apikeyv1.IssueAccessTokenResponse, error) {
+	ret := _mock.Called(context1, issueAccessTokenRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IssueAccessToken")
 	}
 
-	var r0 *connect.Response[apikeyv1.IssueAccessTokenResponse]
+	var r0 *apikeyv1.IssueAccessTokenResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[apikeyv1.IssueAccessTokenRequest]) (*connect.Response[apikeyv1.IssueAccessTokenResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *apikeyv1.IssueAccessTokenRequest) (*apikeyv1.IssueAccessTokenResponse, error)); ok {
+		return returnFunc(context1, issueAccessTokenRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[apikeyv1.IssueAccessTokenRequest]) *connect.Response[apikeyv1.IssueAccessTokenResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *apikeyv1.IssueAccessTokenRequest) *apikeyv1.IssueAccessTokenResponse); ok {
+		r0 = returnFunc(context1, issueAccessTokenRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[apikeyv1.IssueAccessTokenResponse])
+			r0 = ret.Get(0).(*apikeyv1.IssueAccessTokenResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[apikeyv1.IssueAccessTokenRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *apikeyv1.IssueAccessTokenRequest) error); ok {
+		r1 = returnFunc(context1, issueAccessTokenRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -86,20 +86,20 @@ type ApiKeyServiceHandler_IssueAccessToken_Call struct {
 
 // IssueAccessToken is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[apikeyv1.IssueAccessTokenRequest]
-func (_e *ApiKeyServiceHandler_Expecter) IssueAccessToken(context1 any, request any) *ApiKeyServiceHandler_IssueAccessToken_Call {
-	return &ApiKeyServiceHandler_IssueAccessToken_Call{Call: _e.mock.On("IssueAccessToken", context1, request)}
+//   - issueAccessTokenRequest *apikeyv1.IssueAccessTokenRequest
+func (_e *ApiKeyServiceHandler_Expecter) IssueAccessToken(context1 any, issueAccessTokenRequest any) *ApiKeyServiceHandler_IssueAccessToken_Call {
+	return &ApiKeyServiceHandler_IssueAccessToken_Call{Call: _e.mock.On("IssueAccessToken", context1, issueAccessTokenRequest)}
 }
 
-func (_c *ApiKeyServiceHandler_IssueAccessToken_Call) Run(run func(context1 context.Context, request *connect.Request[apikeyv1.IssueAccessTokenRequest])) *ApiKeyServiceHandler_IssueAccessToken_Call {
+func (_c *ApiKeyServiceHandler_IssueAccessToken_Call) Run(run func(context1 context.Context, issueAccessTokenRequest *apikeyv1.IssueAccessTokenRequest)) *ApiKeyServiceHandler_IssueAccessToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[apikeyv1.IssueAccessTokenRequest]
+		var arg1 *apikeyv1.IssueAccessTokenRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[apikeyv1.IssueAccessTokenRequest])
+			arg1 = args[1].(*apikeyv1.IssueAccessTokenRequest)
 		}
 		run(
 			arg0,
@@ -109,38 +109,38 @@ func (_c *ApiKeyServiceHandler_IssueAccessToken_Call) Run(run func(context1 cont
 	return _c
 }
 
-func (_c *ApiKeyServiceHandler_IssueAccessToken_Call) Return(response *connect.Response[apikeyv1.IssueAccessTokenResponse], err error) *ApiKeyServiceHandler_IssueAccessToken_Call {
-	_c.Call.Return(response, err)
+func (_c *ApiKeyServiceHandler_IssueAccessToken_Call) Return(issueAccessTokenResponse *apikeyv1.IssueAccessTokenResponse, err error) *ApiKeyServiceHandler_IssueAccessToken_Call {
+	_c.Call.Return(issueAccessTokenResponse, err)
 	return _c
 }
 
-func (_c *ApiKeyServiceHandler_IssueAccessToken_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[apikeyv1.IssueAccessTokenRequest]) (*connect.Response[apikeyv1.IssueAccessTokenResponse], error)) *ApiKeyServiceHandler_IssueAccessToken_Call {
+func (_c *ApiKeyServiceHandler_IssueAccessToken_Call) RunAndReturn(run func(context1 context.Context, issueAccessTokenRequest *apikeyv1.IssueAccessTokenRequest) (*apikeyv1.IssueAccessTokenResponse, error)) *ApiKeyServiceHandler_IssueAccessToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // RefreshDeviceToken provides a mock function for the type ApiKeyServiceHandler
-func (_mock *ApiKeyServiceHandler) RefreshDeviceToken(context1 context.Context, request *connect.Request[apikeyv1.RefreshDeviceTokenRequest]) (*connect.Response[apikeyv1.RefreshDeviceTokenResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *ApiKeyServiceHandler) RefreshDeviceToken(context1 context.Context, refreshDeviceTokenRequest *apikeyv1.RefreshDeviceTokenRequest) (*apikeyv1.RefreshDeviceTokenResponse, error) {
+	ret := _mock.Called(context1, refreshDeviceTokenRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RefreshDeviceToken")
 	}
 
-	var r0 *connect.Response[apikeyv1.RefreshDeviceTokenResponse]
+	var r0 *apikeyv1.RefreshDeviceTokenResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[apikeyv1.RefreshDeviceTokenRequest]) (*connect.Response[apikeyv1.RefreshDeviceTokenResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *apikeyv1.RefreshDeviceTokenRequest) (*apikeyv1.RefreshDeviceTokenResponse, error)); ok {
+		return returnFunc(context1, refreshDeviceTokenRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[apikeyv1.RefreshDeviceTokenRequest]) *connect.Response[apikeyv1.RefreshDeviceTokenResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *apikeyv1.RefreshDeviceTokenRequest) *apikeyv1.RefreshDeviceTokenResponse); ok {
+		r0 = returnFunc(context1, refreshDeviceTokenRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[apikeyv1.RefreshDeviceTokenResponse])
+			r0 = ret.Get(0).(*apikeyv1.RefreshDeviceTokenResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[apikeyv1.RefreshDeviceTokenRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *apikeyv1.RefreshDeviceTokenRequest) error); ok {
+		r1 = returnFunc(context1, refreshDeviceTokenRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -154,20 +154,20 @@ type ApiKeyServiceHandler_RefreshDeviceToken_Call struct {
 
 // RefreshDeviceToken is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[apikeyv1.RefreshDeviceTokenRequest]
-func (_e *ApiKeyServiceHandler_Expecter) RefreshDeviceToken(context1 any, request any) *ApiKeyServiceHandler_RefreshDeviceToken_Call {
-	return &ApiKeyServiceHandler_RefreshDeviceToken_Call{Call: _e.mock.On("RefreshDeviceToken", context1, request)}
+//   - refreshDeviceTokenRequest *apikeyv1.RefreshDeviceTokenRequest
+func (_e *ApiKeyServiceHandler_Expecter) RefreshDeviceToken(context1 any, refreshDeviceTokenRequest any) *ApiKeyServiceHandler_RefreshDeviceToken_Call {
+	return &ApiKeyServiceHandler_RefreshDeviceToken_Call{Call: _e.mock.On("RefreshDeviceToken", context1, refreshDeviceTokenRequest)}
 }
 
-func (_c *ApiKeyServiceHandler_RefreshDeviceToken_Call) Run(run func(context1 context.Context, request *connect.Request[apikeyv1.RefreshDeviceTokenRequest])) *ApiKeyServiceHandler_RefreshDeviceToken_Call {
+func (_c *ApiKeyServiceHandler_RefreshDeviceToken_Call) Run(run func(context1 context.Context, refreshDeviceTokenRequest *apikeyv1.RefreshDeviceTokenRequest)) *ApiKeyServiceHandler_RefreshDeviceToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[apikeyv1.RefreshDeviceTokenRequest]
+		var arg1 *apikeyv1.RefreshDeviceTokenRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[apikeyv1.RefreshDeviceTokenRequest])
+			arg1 = args[1].(*apikeyv1.RefreshDeviceTokenRequest)
 		}
 		run(
 			arg0,
@@ -177,27 +177,27 @@ func (_c *ApiKeyServiceHandler_RefreshDeviceToken_Call) Run(run func(context1 co
 	return _c
 }
 
-func (_c *ApiKeyServiceHandler_RefreshDeviceToken_Call) Return(response *connect.Response[apikeyv1.RefreshDeviceTokenResponse], err error) *ApiKeyServiceHandler_RefreshDeviceToken_Call {
-	_c.Call.Return(response, err)
+func (_c *ApiKeyServiceHandler_RefreshDeviceToken_Call) Return(refreshDeviceTokenResponse *apikeyv1.RefreshDeviceTokenResponse, err error) *ApiKeyServiceHandler_RefreshDeviceToken_Call {
+	_c.Call.Return(refreshDeviceTokenResponse, err)
 	return _c
 }
 
-func (_c *ApiKeyServiceHandler_RefreshDeviceToken_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[apikeyv1.RefreshDeviceTokenRequest]) (*connect.Response[apikeyv1.RefreshDeviceTokenResponse], error)) *ApiKeyServiceHandler_RefreshDeviceToken_Call {
+func (_c *ApiKeyServiceHandler_RefreshDeviceToken_Call) RunAndReturn(run func(context1 context.Context, refreshDeviceTokenRequest *apikeyv1.RefreshDeviceTokenRequest) (*apikeyv1.RefreshDeviceTokenResponse, error)) *ApiKeyServiceHandler_RefreshDeviceToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // RegisterDevice provides a mock function for the type ApiKeyServiceHandler
-func (_mock *ApiKeyServiceHandler) RegisterDevice(context1 context.Context, request *connect.Request[apikeyv1.RegisterDeviceRequest], serverStream *connect.ServerStream[apikeyv1.RegisterDeviceResponse]) error {
-	ret := _mock.Called(context1, request, serverStream)
+func (_mock *ApiKeyServiceHandler) RegisterDevice(context1 context.Context, registerDeviceRequest *apikeyv1.RegisterDeviceRequest, apiKeyServiceRegisterDeviceServerStream apikeyv1connect.ApiKeyServiceRegisterDeviceServerStream) error {
+	ret := _mock.Called(context1, registerDeviceRequest, apiKeyServiceRegisterDeviceServerStream)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RegisterDevice")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[apikeyv1.RegisterDeviceRequest], *connect.ServerStream[apikeyv1.RegisterDeviceResponse]) error); ok {
-		r0 = returnFunc(context1, request, serverStream)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *apikeyv1.RegisterDeviceRequest, apikeyv1connect.ApiKeyServiceRegisterDeviceServerStream) error); ok {
+		r0 = returnFunc(context1, registerDeviceRequest, apiKeyServiceRegisterDeviceServerStream)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -211,25 +211,25 @@ type ApiKeyServiceHandler_RegisterDevice_Call struct {
 
 // RegisterDevice is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[apikeyv1.RegisterDeviceRequest]
-//   - serverStream *connect.ServerStream[apikeyv1.RegisterDeviceResponse]
-func (_e *ApiKeyServiceHandler_Expecter) RegisterDevice(context1 any, request any, serverStream any) *ApiKeyServiceHandler_RegisterDevice_Call {
-	return &ApiKeyServiceHandler_RegisterDevice_Call{Call: _e.mock.On("RegisterDevice", context1, request, serverStream)}
+//   - registerDeviceRequest *apikeyv1.RegisterDeviceRequest
+//   - apiKeyServiceRegisterDeviceServerStream apikeyv1connect.ApiKeyServiceRegisterDeviceServerStream
+func (_e *ApiKeyServiceHandler_Expecter) RegisterDevice(context1 any, registerDeviceRequest any, apiKeyServiceRegisterDeviceServerStream any) *ApiKeyServiceHandler_RegisterDevice_Call {
+	return &ApiKeyServiceHandler_RegisterDevice_Call{Call: _e.mock.On("RegisterDevice", context1, registerDeviceRequest, apiKeyServiceRegisterDeviceServerStream)}
 }
 
-func (_c *ApiKeyServiceHandler_RegisterDevice_Call) Run(run func(context1 context.Context, request *connect.Request[apikeyv1.RegisterDeviceRequest], serverStream *connect.ServerStream[apikeyv1.RegisterDeviceResponse])) *ApiKeyServiceHandler_RegisterDevice_Call {
+func (_c *ApiKeyServiceHandler_RegisterDevice_Call) Run(run func(context1 context.Context, registerDeviceRequest *apikeyv1.RegisterDeviceRequest, apiKeyServiceRegisterDeviceServerStream apikeyv1connect.ApiKeyServiceRegisterDeviceServerStream)) *ApiKeyServiceHandler_RegisterDevice_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[apikeyv1.RegisterDeviceRequest]
+		var arg1 *apikeyv1.RegisterDeviceRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[apikeyv1.RegisterDeviceRequest])
+			arg1 = args[1].(*apikeyv1.RegisterDeviceRequest)
 		}
-		var arg2 *connect.ServerStream[apikeyv1.RegisterDeviceResponse]
+		var arg2 apikeyv1connect.ApiKeyServiceRegisterDeviceServerStream
 		if args[2] != nil {
-			arg2 = args[2].(*connect.ServerStream[apikeyv1.RegisterDeviceResponse])
+			arg2 = args[2].(apikeyv1connect.ApiKeyServiceRegisterDeviceServerStream)
 		}
 		run(
 			arg0,
@@ -245,7 +245,7 @@ func (_c *ApiKeyServiceHandler_RegisterDevice_Call) Return(err error) *ApiKeySer
 	return _c
 }
 
-func (_c *ApiKeyServiceHandler_RegisterDevice_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[apikeyv1.RegisterDeviceRequest], serverStream *connect.ServerStream[apikeyv1.RegisterDeviceResponse]) error) *ApiKeyServiceHandler_RegisterDevice_Call {
+func (_c *ApiKeyServiceHandler_RegisterDevice_Call) RunAndReturn(run func(context1 context.Context, registerDeviceRequest *apikeyv1.RegisterDeviceRequest, apiKeyServiceRegisterDeviceServerStream apikeyv1connect.ApiKeyServiceRegisterDeviceServerStream) error) *ApiKeyServiceHandler_RegisterDevice_Call {
 	_c.Call.Return(run)
 	return _c
 }

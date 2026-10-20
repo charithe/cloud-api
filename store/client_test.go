@@ -5,10 +5,10 @@ package store_test
 
 import (
 	"errors"
-	"net/http"
 	"testing"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connectproto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -57,8 +57,11 @@ func testListFiles(creds *credentials.Credentials) func(*testing.T) {
 
 		t.Run("Success", func(t *testing.T) {
 			mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-			storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-			mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+			handlers := []func(*connect.Server){
+				func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+			}
+
+			mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 			testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 			wantResp := &storev1.ListFilesResponse{
@@ -66,9 +69,9 @@ func testListFiles(creds *credentials.Credentials) func(*testing.T) {
 				Files:        []string{"foo.yaml"},
 			}
 
-			mockStoreSvc.EXPECT().ListFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.ListFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
-			})).Return(connect.NewResponse(wantResp), nil)
+			mockStoreSvc.EXPECT().ListFiles(mock.Anything, mock.MatchedBy(func(c *storev1.ListFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
+			})).Return(wantResp, nil)
 
 			client, err := hub.StoreClient()
 			require.NoError(t, err)
@@ -79,8 +82,8 @@ func testListFiles(creds *credentials.Credentials) func(*testing.T) {
 		})
 
 		t.Run("ErrorHandling", testErrorHandling(creds, func(mockStoreSvc *mockstorev1connect.CerbosStoreServiceHandler, client store.Client, wantErr error) error {
-			mockStoreSvc.EXPECT().ListFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.ListFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
+			mockStoreSvc.EXPECT().ListFiles(mock.Anything, mock.MatchedBy(func(c *storev1.ListFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
 			})).Return(nil, wantErr)
 
 			_, err := client.ListFiles(t.Context(), wantReq)
@@ -97,8 +100,10 @@ func testListFiles(creds *credentials.Credentials) func(*testing.T) {
 func testAuthenticationFailure(creds *credentials.Credentials, fn func(store.Client) error) func(*testing.T) {
 	return func(t *testing.T) {
 		mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-		storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-		mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+		handlers := []func(*connect.Server){
+			func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+		}
+		mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 
 		testserver.ExpectAPIKeyFailure(t, mockAPIKeySvc)
 
@@ -131,37 +136,37 @@ func testErrorHandling(creds *credentials.Credentials, fn func(*mockstorev1conne
 		}{
 			{
 				name:     "StoreNotFound",
-				err:      connect.NewError(connect.CodeNotFound, errors.New("store not found")),
+				err:      connect.NewError(connect.CodeNotFound, "store not found"),
 				wantKind: store.RPCErrorStoreNotFound,
 			},
 			{
 				name:     "PermissionDenied",
-				err:      connect.NewError(connect.CodePermissionDenied, errors.New("permission denied")),
+				err:      connect.NewError(connect.CodePermissionDenied, "permission denied"),
 				wantKind: store.RPCErrorPermissionDenied,
 			},
 			{
 				name:     "CannotModifyGitConnectedStore",
-				err:      connect.NewError(connect.CodeFailedPrecondition, errors.New("can't modify Git-connected store")),
+				err:      connect.NewError(connect.CodeFailedPrecondition, "can't modify Git-connected store"),
 				details:  &storev1.ErrDetailCannotModifyGitConnectedStore{},
 				wantKind: store.RPCErrorCannotModifyGitConnectedStore,
 			},
 			{
 				name:                    "ConditionUnsatisfied",
-				err:                     connect.NewError(connect.CodeFailedPrecondition, errors.New("condition unsatisfied")),
+				err:                     connect.NewError(connect.CodeFailedPrecondition, "condition unsatisfied"),
 				details:                 &storev1.ErrDetailConditionUnsatisfied{CurrentStoreVersion: 5},
 				wantKind:                store.RPCErrorConditionUnsatisfied,
 				wantCurrentStoreVersion: 5,
 			},
 			{
 				name:        "NoUsableFiles",
-				err:         connect.NewError(connect.CodeInvalidArgument, errors.New("no usable files")),
+				err:         connect.NewError(connect.CodeInvalidArgument, "no usable files"),
 				details:     &storev1.ErrDetailNoUsableFiles{IgnoredFiles: []string{"foo"}},
 				wantKind:    store.RPCErrorNoUsableFiles,
 				wantIgnored: []string{"foo"},
 			},
 			{
 				name:                    "OperationDiscarded",
-				err:                     connect.NewError(connect.CodeAlreadyExists, errors.New("operation discarded")),
+				err:                     connect.NewError(connect.CodeAlreadyExists, "operation discarded"),
 				details:                 &storev1.ErrDetailOperationDiscarded{CurrentStoreVersion: 5, IgnoredFiles: []string{"foo"}},
 				wantKind:                store.RPCErrorOperationDiscarded,
 				wantCurrentStoreVersion: 5,
@@ -169,7 +174,7 @@ func testErrorHandling(creds *credentials.Credentials, fn func(*mockstorev1conne
 			},
 			{
 				name: "ValidationFailure",
-				err:  connect.NewError(connect.CodeInvalidArgument, errors.New("validation failure")),
+				err:  connect.NewError(connect.CodeInvalidArgument, "validation failure"),
 				details: &storev1.ErrDetailValidationFailure{
 					Errors: []*storev1.FileError{
 						{
@@ -190,7 +195,7 @@ func testErrorHandling(creds *credentials.Credentials, fn func(*mockstorev1conne
 			},
 			{
 				name:     "Unknown",
-				err:      connect.NewError(connect.CodeInternal, errors.New("internal error")),
+				err:      connect.NewError(connect.CodeInternal, "internal error"),
 				wantKind: store.RPCErrorUnknown,
 			},
 		}
@@ -198,14 +203,16 @@ func testErrorHandling(creds *credentials.Credentials, fn func(*mockstorev1conne
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-				storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-				mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+				handlers := []func(*connect.Server){
+					func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+				}
+				mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 				testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 				if tc.details != nil {
-					details, err := connect.NewErrorDetail(tc.details)
+					details, err := connectproto.NewErrorDetail(tc.details)
 					require.NoError(t, err)
-					tc.err.AddDetail(details)
+					tc.err = tc.err.WithDetail(details)
 				}
 
 				client, err := hub.StoreClient()
@@ -232,8 +239,10 @@ func testGetCurrentVersion(creds *credentials.Credentials) func(*testing.T) {
 
 		t.Run("Success", func(t *testing.T) {
 			mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-			storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-			mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+			handlers := []func(*connect.Server){
+				func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+			}
+			mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 			testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 			wantResp := &storev1.GetCurrentVersionResponse{
@@ -256,9 +265,9 @@ func testGetCurrentVersion(creds *credentials.Credentials) func(*testing.T) {
 				},
 			}
 
-			mockStoreSvc.EXPECT().GetCurrentVersion(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.GetCurrentVersionRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
-			})).Return(connect.NewResponse(wantResp), nil)
+			mockStoreSvc.EXPECT().GetCurrentVersion(mock.Anything, mock.MatchedBy(func(c *storev1.GetCurrentVersionRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
+			})).Return(wantResp, nil)
 
 			client, err := hub.StoreClient()
 			require.NoError(t, err)
@@ -269,8 +278,8 @@ func testGetCurrentVersion(creds *credentials.Credentials) func(*testing.T) {
 		})
 
 		t.Run("ErrorHandling", testErrorHandling(creds, func(mockStoreSvc *mockstorev1connect.CerbosStoreServiceHandler, client store.Client, wantErr error) error {
-			mockStoreSvc.EXPECT().GetCurrentVersion(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.GetCurrentVersionRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
+			mockStoreSvc.EXPECT().GetCurrentVersion(mock.Anything, mock.MatchedBy(func(c *storev1.GetCurrentVersionRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
 			})).Return(nil, wantErr)
 
 			_, err := client.GetCurrentVersion(t.Context(), wantReq)
@@ -293,8 +302,10 @@ func testGetFiles(creds *credentials.Credentials) func(*testing.T) {
 
 		t.Run("Success", func(t *testing.T) {
 			mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-			storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-			mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+			handlers := []func(*connect.Server){
+				func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+			}
+			mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 			testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 			wantResp := &storev1.GetFilesResponse{
@@ -315,9 +326,9 @@ func testGetFiles(creds *credentials.Credentials) func(*testing.T) {
 				},
 			}
 
-			mockStoreSvc.EXPECT().GetFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.GetFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
-			})).Return(connect.NewResponse(wantResp), nil)
+			mockStoreSvc.EXPECT().GetFiles(mock.Anything, mock.MatchedBy(func(c *storev1.GetFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
+			})).Return(wantResp, nil)
 
 			client, err := hub.StoreClient()
 			require.NoError(t, err)
@@ -328,8 +339,8 @@ func testGetFiles(creds *credentials.Credentials) func(*testing.T) {
 		})
 
 		t.Run("ErrorHandling", testErrorHandling(creds, func(mockStoreSvc *mockstorev1connect.CerbosStoreServiceHandler, client store.Client, wantErr error) error {
-			mockStoreSvc.EXPECT().GetFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.GetFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
+			mockStoreSvc.EXPECT().GetFiles(mock.Anything, mock.MatchedBy(func(c *storev1.GetFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
 			})).Return(nil, wantErr)
 
 			_, err := client.GetFiles(t.Context(), wantReq)
@@ -361,17 +372,20 @@ func testModifyFiles(creds *credentials.Credentials) func(*testing.T) {
 
 		t.Run("Success", func(t *testing.T) {
 			mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-			storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-			mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+
+			handlers := []func(*connect.Server){
+				func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+			}
+			mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 			testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 			wantResp := &storev1.ModifyFilesResponse{
 				NewStoreVersion: 3,
 			}
 
-			mockStoreSvc.EXPECT().ModifyFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.ModifyFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
-			})).Return(connect.NewResponse(wantResp), nil)
+			mockStoreSvc.EXPECT().ModifyFiles(mock.Anything, mock.MatchedBy(func(c *storev1.ModifyFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
+			})).Return(wantResp, nil)
 
 			client, err := hub.StoreClient()
 			require.NoError(t, err)
@@ -382,8 +396,8 @@ func testModifyFiles(creds *credentials.Credentials) func(*testing.T) {
 		})
 
 		t.Run("ErrorHandling", testErrorHandling(creds, func(mockStoreSvc *mockstorev1connect.CerbosStoreServiceHandler, client store.Client, wantErr error) error {
-			mockStoreSvc.EXPECT().ModifyFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.ModifyFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
+			mockStoreSvc.EXPECT().ModifyFiles(mock.Anything, mock.MatchedBy(func(c *storev1.ModifyFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
 			})).Return(nil, wantErr)
 
 			_, err := client.ModifyFiles(t.Context(), wantReq)
@@ -408,8 +422,10 @@ func testReplaceFiles(creds *credentials.Credentials) func(*testing.T) {
 
 		t.Run("Success", func(t *testing.T) {
 			mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-			storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-			mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+			handlers := []func(*connect.Server){
+				func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+			}
+			mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 			testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 			wantResp := &storev1.ReplaceFilesResponse{
@@ -417,9 +433,9 @@ func testReplaceFiles(creds *credentials.Credentials) func(*testing.T) {
 				IgnoredFiles:    []string{"foo"},
 			}
 
-			mockStoreSvc.EXPECT().ReplaceFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.ReplaceFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
-			})).Return(connect.NewResponse(wantResp), nil)
+			mockStoreSvc.EXPECT().ReplaceFiles(mock.Anything, mock.MatchedBy(func(c *storev1.ReplaceFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
+			})).Return(wantResp, nil)
 
 			client, err := hub.StoreClient()
 			require.NoError(t, err)
@@ -430,8 +446,8 @@ func testReplaceFiles(creds *credentials.Credentials) func(*testing.T) {
 		})
 
 		t.Run("ErrorHandling", testErrorHandling(creds, func(mockStoreSvc *mockstorev1connect.CerbosStoreServiceHandler, client store.Client, wantErr error) error {
-			mockStoreSvc.EXPECT().ReplaceFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.ReplaceFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
+			mockStoreSvc.EXPECT().ReplaceFiles(mock.Anything, mock.MatchedBy(func(c *storev1.ReplaceFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
 			})).Return(nil, wantErr)
 
 			_, err := client.ReplaceFiles(t.Context(), wantReq)
@@ -451,13 +467,15 @@ func testCircuitBreaker(creds *credentials.Credentials) func(*testing.T) {
 
 		t.Run("UnthrottledErrors", func(t *testing.T) {
 			mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-			storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-			mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+			handlers := []func(*connect.Server){
+				func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+			}
+			mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 			testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
-			mockStoreSvc.EXPECT().ListFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.ListFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
-			})).Return(nil, connect.NewError(connect.CodeCanceled, errors.New("canceled")))
+			mockStoreSvc.EXPECT().ListFiles(mock.Anything, mock.MatchedBy(func(c *storev1.ListFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
+			})).Return(nil, connect.NewError(connect.CodeCanceled, "canceled"))
 
 			base.ResetCircuitBreaker()
 			client, err := hub.StoreClient()
@@ -476,16 +494,19 @@ func testCircuitBreaker(creds *credentials.Credentials) func(*testing.T) {
 		})
 
 		t.Run("ThrottledErrors", func(t *testing.T) {
+			base.ResetCircuitBreaker()
+
 			mockStoreSvc := mockstorev1connect.NewCerbosStoreServiceHandler(t)
-			storePath, storeHandler := storev1connect.NewCerbosStoreServiceHandler(mockStoreSvc)
-			mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{storePath: testserver.LogRequests(t, storeHandler)}, creds)
+			handlers := []func(*connect.Server){
+				func(s *connect.Server) { storev1connect.RegisterCerbosStoreServiceHandler(s, mockStoreSvc) },
+			}
+			mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 			testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
-			mockStoreSvc.EXPECT().ListFiles(mock.Anything, mock.MatchedBy(func(c *connect.Request[storev1.ListFilesRequest]) bool {
-				return cmp.Equal(c.Msg, wantReq, protocmp.Transform())
+			mockStoreSvc.EXPECT().ListFiles(mock.Anything, mock.MatchedBy(func(c *storev1.ListFilesRequest) bool {
+				return cmp.Equal(c, wantReq, protocmp.Transform())
 			})).Return(nil, errors.New("failure is inevitable"))
 
-			base.ResetCircuitBreaker()
 			client, err := hub.StoreClient()
 			require.NoError(t, err)
 

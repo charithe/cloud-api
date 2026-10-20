@@ -8,7 +8,9 @@ import (
 	"errors"
 	"iter"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
+	"connectrpc.com/connect/v2/connectproto"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/cerbos/cloud-api/base"
@@ -108,7 +110,7 @@ func newRPCError(err error) RPCError {
 func details(err *connect.Error) iter.Seq[proto.Message] {
 	return func(yield func(proto.Message) bool) {
 		for _, d := range err.Details() {
-			msg, err := d.Value()
+			msg, err := connectproto.UnmarshalErrorDetail(d)
 			if err != nil {
 				continue
 			}
@@ -134,9 +136,10 @@ type clientImpl struct {
 	base.Client
 }
 
-func NewClient(baseClient base.Client, options []connect.ClientOption) (Client, error) {
+func NewClient(baseClient base.Client, options []connecthttp.Option, interceptors []connect.ClientInterceptor) (Client, error) {
 	httpClient := baseClient.StdHTTPClient()
-	rpcClient := storev1connect.NewCerbosStoreServiceClient(httpClient, baseClient.APIEndpoint, options...)
+	opts := append([]connecthttp.Option{connecthttp.WithReadMaxBytes(0)}, options...)
+	rpcClient := storev1connect.NewCerbosStoreServiceClient(connect.NewClient(connecthttp.NewTransport(httpClient, baseClient.APIEndpoint, opts...), interceptors...))
 
 	return &clientImpl{
 		Client:    baseClient,
@@ -145,46 +148,46 @@ func NewClient(baseClient base.Client, options []connect.ClientOption) (Client, 
 }
 
 func (c *clientImpl) ListFiles(ctx context.Context, req *storev1.ListFilesRequest) (*storev1.ListFilesResponse, error) {
-	resp, err := c.rpcClient.ListFiles(ctx, connect.NewRequest(req))
+	resp, err := c.rpcClient.ListFiles(ctx, req)
 	if err != nil {
 		return nil, newRPCError(err)
 	}
 
-	return resp.Msg, nil
+	return resp, nil
 }
 
 func (c *clientImpl) GetCurrentVersion(ctx context.Context, req *storev1.GetCurrentVersionRequest) (*storev1.GetCurrentVersionResponse, error) {
-	resp, err := c.rpcClient.GetCurrentVersion(ctx, connect.NewRequest(req))
+	resp, err := c.rpcClient.GetCurrentVersion(ctx, req)
 	if err != nil {
 		return nil, newRPCError(err)
 	}
 
-	return resp.Msg, nil
+	return resp, nil
 }
 
 func (c *clientImpl) GetFiles(ctx context.Context, req *storev1.GetFilesRequest) (*storev1.GetFilesResponse, error) {
-	resp, err := c.rpcClient.GetFiles(ctx, connect.NewRequest(req))
+	resp, err := c.rpcClient.GetFiles(ctx, req)
 	if err != nil {
 		return nil, newRPCError(err)
 	}
 
-	return resp.Msg, nil
+	return resp, nil
 }
 
 func (c *clientImpl) ModifyFiles(ctx context.Context, req *storev1.ModifyFilesRequest) (*storev1.ModifyFilesResponse, error) {
-	resp, err := c.rpcClient.ModifyFiles(ctx, connect.NewRequest(req))
+	resp, err := c.rpcClient.ModifyFiles(ctx, req)
 	if err != nil {
 		return nil, newRPCError(err)
 	}
 
-	return resp.Msg, nil
+	return resp, nil
 }
 
 func (c *clientImpl) ReplaceFiles(ctx context.Context, req *storev1.ReplaceFilesRequest) (*storev1.ReplaceFilesResponse, error) {
-	resp, err := c.rpcClient.ReplaceFiles(ctx, connect.NewRequest(req))
+	resp, err := c.rpcClient.ReplaceFiles(ctx, req)
 	if err != nil {
 		return nil, newRPCError(err)
 	}
 
-	return resp.Msg, nil
+	return resp, nil
 }

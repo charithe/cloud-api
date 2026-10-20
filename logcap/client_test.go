@@ -6,11 +6,10 @@
 package logcap_test
 
 import (
-	"net/http"
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	auditv1 "github.com/cerbos/cerbos/api/genpb/cerbos/audit/v1"
 	effectv1 "github.com/cerbos/cerbos/api/genpb/cerbos/effect/v1"
 	enginev1 "github.com/cerbos/cerbos/api/genpb/cerbos/engine/v1"
@@ -125,8 +124,10 @@ func TestIngest(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				mockLogsSvc := mocklogsv1connect.NewCerbosLogsServiceHandler(t)
-				logsPath, logsHandler := logsv1connect.NewCerbosLogsServiceHandler(mockLogsSvc)
-				mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{logsPath: testserver.LogRequests(t, logsHandler)}, creds)
+				handlers := []func(*connect.Server){
+					func(s *connect.Server) { logsv1connect.RegisterCerbosLogsServiceHandler(s, mockLogsSvc) },
+				}
+				mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 
 				testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
@@ -139,12 +140,12 @@ func TestIngest(t *testing.T) {
 				}
 
 				mockLogsSvc.EXPECT().
-					Ingest(mock.Anything, mock.MatchedBy(func(c *connect.Request[logsv1.IngestRequest]) bool {
-						return cmp.Equal(c.Msg, want, protocmp.Transform())
+					Ingest(mock.Anything, mock.MatchedBy(func(req *logsv1.IngestRequest) bool {
+						return cmp.Equal(want, req, protocmp.Transform())
 					})).
-					Return(connect.NewResponse(&logsv1.IngestResponse{
+					Return(&logsv1.IngestResponse{
 						Status: &logsv1.IngestResponse_Success{},
-					}), nil).Once()
+					}, nil).Once()
 
 				client, err := hub.LogCapClient()
 				require.NoError(t, err)
@@ -157,8 +158,10 @@ func TestIngest(t *testing.T) {
 
 	t.Run("AuthenticationFailure", func(t *testing.T) {
 		mockLogsSvc := mocklogsv1connect.NewCerbosLogsServiceHandler(t)
-		logsPath, logsHandler := logsv1connect.NewCerbosLogsServiceHandler(mockLogsSvc)
-		mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{logsPath: testserver.LogRequests(t, logsHandler)}, creds)
+		handlers := []func(*connect.Server){
+			func(s *connect.Server) { logsv1connect.RegisterCerbosLogsServiceHandler(s, mockLogsSvc) },
+		}
+		mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 		testserver.ExpectAPIKeyFailure(t, mockAPIKeySvc)
 
 		client, err := hub.LogCapClient()
@@ -200,8 +203,10 @@ func TestIngestRaw(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockLogsSvc := mocklogsv1connect.NewCerbosLogsServiceHandler(t)
-			logsPath, logsHandler := logsv1connect.NewCerbosLogsServiceHandler(mockLogsSvc)
-			mockAPIKeySvc, hub := testserver.Start(t, map[string]http.Handler{logsPath: testserver.LogRequests(t, logsHandler)}, creds)
+			handlers := []func(*connect.Server){
+				func(s *connect.Server) { logsv1connect.RegisterCerbosLogsServiceHandler(s, mockLogsSvc) },
+			}
+			mockAPIKeySvc, hub := testserver.Start(t, handlers, creds)
 
 			testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
@@ -216,12 +221,12 @@ func TestIngestRaw(t *testing.T) {
 			}
 
 			mockLogsSvc.EXPECT().
-				Ingest(mock.Anything, mock.MatchedBy(func(c *connect.Request[logsv1.IngestRequest]) bool {
-					return cmp.Equal(c.Msg, want, protocmp.Transform())
+				Ingest(mock.Anything, mock.MatchedBy(func(req *logsv1.IngestRequest) bool {
+					return cmp.Equal(want, req, protocmp.Transform())
 				})).
-				Return(connect.NewResponse(&logsv1.IngestResponse{
+				Return(&logsv1.IngestResponse{
 					Status: &logsv1.IngestResponse_Success{},
-				}), nil).Once()
+				}, nil).Once()
 
 			client, err := hub.LogCapClient()
 			require.NoError(t, err)

@@ -14,7 +14,8 @@ import (
 	"time"
 
 	"buf.build/go/protovalidate"
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/go-logr/logr"
 	"github.com/rogpeppe/go-internal/cache"
 	"github.com/sourcegraph/conc/pool"
@@ -33,7 +34,7 @@ type Client struct {
 	base.Client
 }
 
-func NewClient(conf ClientConf, baseClient base.Client, options []connect.ClientOption) (*Client, error) {
+func NewClient(conf ClientConf, baseClient base.Client, options []connecthttp.Option, interceptors []connect.ClientInterceptor) (*Client, error) {
 	if err := conf.Validate(); err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ func NewClient(conf ClientConf, baseClient base.Client, options []connect.Client
 	httpClient := baseClient.StdHTTPClient() // Bidi streams don't work with retryable HTTP client.
 	return &Client{
 		Client:    baseClient,
-		rpcClient: bundlev2connect.NewCerbosBundleServiceClient(httpClient, baseClient.APIEndpoint, options...),
+		rpcClient: bundlev2connect.NewCerbosBundleServiceClient(connect.NewClient(connecthttp.NewTransport(httpClient, baseClient.APIEndpoint, options...), interceptors...)),
 		cache:     c,
 	}, nil
 }
@@ -143,11 +144,11 @@ func (c *Client) GetBundle(ctx context.Context, source Source) (string, bundlev2
 	log := c.Logger.WithValues("source", source.String())
 	log.V(1).Info("Calling GetBundle RPC")
 
-	resp, err := c.rpcClient.GetBundle(ctx, connect.NewRequest(&bundlev2.GetBundleRequest{
+	resp, err := c.rpcClient.GetBundle(ctx, &bundlev2.GetBundleRequest{
 		PdpId:      c.PDPIdentifier,
 		Source:     source.ToProto(),
 		BundleType: bundlev2.BundleType_BUNDLE_TYPE_RULE_TABLE.Enum(),
-	}))
+	})
 	if err != nil {
 		log.Error(err, "GetBundle RPC failed")
 		switch connect.CodeOf(err) {
@@ -160,26 +161,23 @@ func (c *Client) GetBundle(ctx context.Context, source Source) (string, bundlev2
 		}
 	}
 
-	base.LogResponsePayload(log, resp.Msg)
+	base.LogResponsePayload(log, resp)
 
-	path, err := c.getBundleFile(logr.NewContext(ctx, log), resp.Msg.BundleInfo)
+	path, err := c.getBundleFile(logr.NewContext(ctx, log), resp.BundleInfo)
 	if err != nil {
 		return "", bundlev2.BundleType_BUNDLE_TYPE_UNSPECIFIED, nil, err
 	}
 
-	return path, resp.Msg.GetBundleInfo().GetBundleType(), resp.Msg.BundleInfo.EncryptionKey, nil
+	return path, resp.GetBundleInfo().GetBundleType(), resp.BundleInfo.EncryptionKey, nil
 }
 
 func (c *Client) WatchBundle(ctx context.Context, source Source) (WatchHandle, error) {
 	log := c.Logger.WithValues("source", source.String())
 	log.V(1).Info("Calling WatchBundle RPC")
 
-	stream := c.rpcClient.WatchBundle(ctx)
-	if err := stream.Send(nil); err != nil {
-		log.V(1).Error(err, "Failed to send request headers")
-		_ = stream.CloseRequest()
-		_ = stream.CloseResponse()
-		return nil, fmt.Errorf("failed to send request headers: %w", err)
+	stream, err := c.rpcClient.WatchBundle(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	wh := &WatchHandleImpl[Source]{
@@ -193,6 +191,7 @@ func (c *Client) WatchBundle(ctx context.Context, source Source) (WatchHandle, e
 	wh.Pool.Go(c.watchStreamRecv(stream, wh, log))
 	wh.Pool.Go(c.watchStreamSend(stream, wh, log))
 	go func() {
+		defer stream.Close()
 		if err := wh.Wait(); err != nil {
 			switch {
 			case errors.Is(err, context.DeadlineExceeded):
@@ -219,7 +218,7 @@ type recvMsg struct {
 	err error
 }
 
-func (c *Client) watchStreamRecv(stream *connect.BidiStreamForClient[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse], wh *WatchHandleImpl[Source], logger logr.Logger) func(context.Context) error {
+func (c *Client) watchStreamRecv(stream bundlev2connect.CerbosBundleServiceWatchBundleClientStream, wh *WatchHandleImpl[Source], logger logr.Logger) func(context.Context) error {
 	return func(ctx context.Context) (outErr error) {
 		log := logger.WithName("recv")
 		log.V(1).Info("Starting response handler")
@@ -228,7 +227,7 @@ func (c *Client) watchStreamRecv(stream *connect.BidiStreamForClient[bundlev2.Wa
 		go func() {
 			defer func() {
 				close(recvChan)
-				if err := stream.CloseResponse(); err != nil && !errors.Is(err, context.Canceled) {
+				if err := stream.Close(); err != nil && !errors.Is(err, context.Canceled) {
 					log.V(2).Error(err, "Error while closing response stream")
 				}
 			}()
@@ -360,7 +359,7 @@ func (c *Client) watchStreamRecv(stream *connect.BidiStreamForClient[bundlev2.Wa
 	}
 }
 
-func (c *Client) watchStreamSend(stream *connect.BidiStreamForClient[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse], wh *WatchHandleImpl[Source], logger logr.Logger) func(context.Context) error {
+func (c *Client) watchStreamSend(stream bundlev2connect.CerbosBundleServiceWatchBundleClientStream, wh *WatchHandleImpl[Source], logger logr.Logger) func(context.Context) error {
 	return func(ctx context.Context) (outErr error) {
 		log := logger.WithName("send")
 		log.V(1).Info("Starting request handler")
@@ -382,7 +381,7 @@ func (c *Client) watchStreamSend(stream *connect.BidiStreamForClient[bundlev2.Wa
 				ticker.Stop()
 			}
 
-			if err := stream.CloseRequest(); err != nil {
+			if err := stream.CloseSend(); err != nil {
 				if !errors.Is(err, context.Canceled) {
 					log.V(1).Error(err, "Failed to close request stream")
 					outErr = multierr.Append(outErr, err)

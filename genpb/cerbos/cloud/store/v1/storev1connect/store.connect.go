@@ -8,228 +8,246 @@
 package storev1connect
 
 import (
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 	context "context"
-	errors "errors"
 	v1 "github.com/cerbos/cloud-api/genpb/cerbos/cloud/store/v1"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// CerbosStoreServiceName is the fully-qualified name of the CerbosStoreService service.
 	CerbosStoreServiceName = "cerbos.cloud.store.v1.CerbosStoreService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// CerbosStoreServiceListFilesProcedure is the fully-qualified name of the CerbosStoreService's
-	// ListFiles RPC.
+	// CerbosStoreServiceListFilesProcedure is the procedure name of the CerbosStoreService's ListFiles
+	// RPC.
 	CerbosStoreServiceListFilesProcedure = "/cerbos.cloud.store.v1.CerbosStoreService/ListFiles"
-	// CerbosStoreServiceGetCurrentVersionProcedure is the fully-qualified name of the
-	// CerbosStoreService's GetCurrentVersion RPC.
+	// CerbosStoreServiceGetCurrentVersionProcedure is the procedure name of the CerbosStoreService's
+	// GetCurrentVersion RPC.
 	CerbosStoreServiceGetCurrentVersionProcedure = "/cerbos.cloud.store.v1.CerbosStoreService/GetCurrentVersion"
-	// CerbosStoreServiceGetFilesProcedure is the fully-qualified name of the CerbosStoreService's
-	// GetFiles RPC.
+	// CerbosStoreServiceGetFilesProcedure is the procedure name of the CerbosStoreService's GetFiles
+	// RPC.
 	CerbosStoreServiceGetFilesProcedure = "/cerbos.cloud.store.v1.CerbosStoreService/GetFiles"
-	// CerbosStoreServiceModifyFilesProcedure is the fully-qualified name of the CerbosStoreService's
+	// CerbosStoreServiceModifyFilesProcedure is the procedure name of the CerbosStoreService's
 	// ModifyFiles RPC.
 	CerbosStoreServiceModifyFilesProcedure = "/cerbos.cloud.store.v1.CerbosStoreService/ModifyFiles"
-	// CerbosStoreServiceReplaceFilesProcedure is the fully-qualified name of the CerbosStoreService's
+	// CerbosStoreServiceReplaceFilesProcedure is the procedure name of the CerbosStoreService's
 	// ReplaceFiles RPC.
 	CerbosStoreServiceReplaceFilesProcedure = "/cerbos.cloud.store.v1.CerbosStoreService/ReplaceFiles"
 )
 
+var (
+	cerbosStoreServiceListFilesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_cerbos_cloud_store_v1_store_proto.Services().ByName("CerbosStoreService").Methods().ByName("ListFiles"),
+			Procedure:        CerbosStoreServiceListFilesProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	cerbosStoreServiceGetCurrentVersionSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_cerbos_cloud_store_v1_store_proto.Services().ByName("CerbosStoreService").Methods().ByName("GetCurrentVersion"),
+			Procedure:        CerbosStoreServiceGetCurrentVersionProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	cerbosStoreServiceGetFilesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_cerbos_cloud_store_v1_store_proto.Services().ByName("CerbosStoreService").Methods().ByName("GetFiles"),
+			Procedure:        CerbosStoreServiceGetFilesProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	cerbosStoreServiceModifyFilesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_cerbos_cloud_store_v1_store_proto.Services().ByName("CerbosStoreService").Methods().ByName("ModifyFiles"),
+			Procedure:  CerbosStoreServiceModifyFilesProcedure,
+		}
+	})
+	cerbosStoreServiceReplaceFilesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_cerbos_cloud_store_v1_store_proto.Services().ByName("CerbosStoreService").Methods().ByName("ReplaceFiles"),
+			Procedure:  CerbosStoreServiceReplaceFilesProcedure,
+		}
+	})
+)
+
 // CerbosStoreServiceClient is a client for the cerbos.cloud.store.v1.CerbosStoreService service.
 type CerbosStoreServiceClient interface {
-	ListFiles(context.Context, *connect.Request[v1.ListFilesRequest]) (*connect.Response[v1.ListFilesResponse], error)
-	GetCurrentVersion(context.Context, *connect.Request[v1.GetCurrentVersionRequest]) (*connect.Response[v1.GetCurrentVersionResponse], error)
-	GetFiles(context.Context, *connect.Request[v1.GetFilesRequest]) (*connect.Response[v1.GetFilesResponse], error)
-	ModifyFiles(context.Context, *connect.Request[v1.ModifyFilesRequest]) (*connect.Response[v1.ModifyFilesResponse], error)
-	ReplaceFiles(context.Context, *connect.Request[v1.ReplaceFilesRequest]) (*connect.Response[v1.ReplaceFilesResponse], error)
+	ListFiles(context.Context, *v1.ListFilesRequest) (*v1.ListFilesResponse, error)
+	GetCurrentVersion(context.Context, *v1.GetCurrentVersionRequest) (*v1.GetCurrentVersionResponse, error)
+	GetFiles(context.Context, *v1.GetFilesRequest) (*v1.GetFilesResponse, error)
+	ModifyFiles(context.Context, *v1.ModifyFilesRequest) (*v1.ModifyFilesResponse, error)
+	ReplaceFiles(context.Context, *v1.ReplaceFilesRequest) (*v1.ReplaceFilesResponse, error)
 }
 
 // NewCerbosStoreServiceClient constructs a client for the cerbos.cloud.store.v1.CerbosStoreService
-// service. By default, it uses the Connect protocol with the binary Protobuf Codec, asks for
-// gzipped responses, and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply
-// the connect.WithGRPC() or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewCerbosStoreServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) CerbosStoreServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	cerbosStoreServiceMethods := v1.File_cerbos_cloud_store_v1_store_proto.Services().ByName("CerbosStoreService").Methods()
-	return &cerbosStoreServiceClient{
-		listFiles: connect.NewClient[v1.ListFilesRequest, v1.ListFilesResponse](
-			httpClient,
-			baseURL+CerbosStoreServiceListFilesProcedure,
-			connect.WithSchema(cerbosStoreServiceMethods.ByName("ListFiles")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		getCurrentVersion: connect.NewClient[v1.GetCurrentVersionRequest, v1.GetCurrentVersionResponse](
-			httpClient,
-			baseURL+CerbosStoreServiceGetCurrentVersionProcedure,
-			connect.WithSchema(cerbosStoreServiceMethods.ByName("GetCurrentVersion")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		getFiles: connect.NewClient[v1.GetFilesRequest, v1.GetFilesResponse](
-			httpClient,
-			baseURL+CerbosStoreServiceGetFilesProcedure,
-			connect.WithSchema(cerbosStoreServiceMethods.ByName("GetFiles")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		modifyFiles: connect.NewClient[v1.ModifyFilesRequest, v1.ModifyFilesResponse](
-			httpClient,
-			baseURL+CerbosStoreServiceModifyFilesProcedure,
-			connect.WithSchema(cerbosStoreServiceMethods.ByName("ModifyFiles")),
-			connect.WithClientOptions(opts...),
-		),
-		replaceFiles: connect.NewClient[v1.ReplaceFilesRequest, v1.ReplaceFilesResponse](
-			httpClient,
-			baseURL+CerbosStoreServiceReplaceFilesProcedure,
-			connect.WithSchema(cerbosStoreServiceMethods.ByName("ReplaceFiles")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// cerbosStoreServiceClient implements CerbosStoreServiceClient.
-type cerbosStoreServiceClient struct {
-	listFiles         *connect.Client[v1.ListFilesRequest, v1.ListFilesResponse]
-	getCurrentVersion *connect.Client[v1.GetCurrentVersionRequest, v1.GetCurrentVersionResponse]
-	getFiles          *connect.Client[v1.GetFilesRequest, v1.GetFilesResponse]
-	modifyFiles       *connect.Client[v1.ModifyFilesRequest, v1.ModifyFilesResponse]
-	replaceFiles      *connect.Client[v1.ReplaceFilesRequest, v1.ReplaceFilesResponse]
-}
-
-// ListFiles calls cerbos.cloud.store.v1.CerbosStoreService.ListFiles.
-func (c *cerbosStoreServiceClient) ListFiles(ctx context.Context, req *connect.Request[v1.ListFilesRequest]) (*connect.Response[v1.ListFilesResponse], error) {
-	return c.listFiles.CallUnary(ctx, req)
-}
-
-// GetCurrentVersion calls cerbos.cloud.store.v1.CerbosStoreService.GetCurrentVersion.
-func (c *cerbosStoreServiceClient) GetCurrentVersion(ctx context.Context, req *connect.Request[v1.GetCurrentVersionRequest]) (*connect.Response[v1.GetCurrentVersionResponse], error) {
-	return c.getCurrentVersion.CallUnary(ctx, req)
-}
-
-// GetFiles calls cerbos.cloud.store.v1.CerbosStoreService.GetFiles.
-func (c *cerbosStoreServiceClient) GetFiles(ctx context.Context, req *connect.Request[v1.GetFilesRequest]) (*connect.Response[v1.GetFilesResponse], error) {
-	return c.getFiles.CallUnary(ctx, req)
-}
-
-// ModifyFiles calls cerbos.cloud.store.v1.CerbosStoreService.ModifyFiles.
-func (c *cerbosStoreServiceClient) ModifyFiles(ctx context.Context, req *connect.Request[v1.ModifyFilesRequest]) (*connect.Response[v1.ModifyFilesResponse], error) {
-	return c.modifyFiles.CallUnary(ctx, req)
-}
-
-// ReplaceFiles calls cerbos.cloud.store.v1.CerbosStoreService.ReplaceFiles.
-func (c *cerbosStoreServiceClient) ReplaceFiles(ctx context.Context, req *connect.Request[v1.ReplaceFilesRequest]) (*connect.Response[v1.ReplaceFilesResponse], error) {
-	return c.replaceFiles.CallUnary(ctx, req)
+// service. Multiple service clients may share a single connect.Client.
+func NewCerbosStoreServiceClient(client *connect.Client) CerbosStoreServiceClient {
+	return &cerbosStoreServiceClient{client: client}
 }
 
 // CerbosStoreServiceHandler is an implementation of the cerbos.cloud.store.v1.CerbosStoreService
 // service.
 type CerbosStoreServiceHandler interface {
-	ListFiles(context.Context, *connect.Request[v1.ListFilesRequest]) (*connect.Response[v1.ListFilesResponse], error)
-	GetCurrentVersion(context.Context, *connect.Request[v1.GetCurrentVersionRequest]) (*connect.Response[v1.GetCurrentVersionResponse], error)
-	GetFiles(context.Context, *connect.Request[v1.GetFilesRequest]) (*connect.Response[v1.GetFilesResponse], error)
-	ModifyFiles(context.Context, *connect.Request[v1.ModifyFilesRequest]) (*connect.Response[v1.ModifyFilesResponse], error)
-	ReplaceFiles(context.Context, *connect.Request[v1.ReplaceFilesRequest]) (*connect.Response[v1.ReplaceFilesResponse], error)
+	ListFiles(context.Context, *v1.ListFilesRequest) (*v1.ListFilesResponse, error)
+	GetCurrentVersion(context.Context, *v1.GetCurrentVersionRequest) (*v1.GetCurrentVersionResponse, error)
+	GetFiles(context.Context, *v1.GetFilesRequest) (*v1.GetFilesResponse, error)
+	ModifyFiles(context.Context, *v1.ModifyFilesRequest) (*v1.ModifyFilesResponse, error)
+	ReplaceFiles(context.Context, *v1.ReplaceFilesRequest) (*v1.ReplaceFilesResponse, error)
 }
 
-// NewCerbosStoreServiceHandler builds an HTTP handler from the service implementation. It returns
-// the path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewCerbosStoreServiceHandler(svc CerbosStoreServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	cerbosStoreServiceMethods := v1.File_cerbos_cloud_store_v1_store_proto.Services().ByName("CerbosStoreService").Methods()
-	cerbosStoreServiceListFilesHandler := connect.NewUnaryHandler(
-		CerbosStoreServiceListFilesProcedure,
-		svc.ListFiles,
-		connect.WithSchema(cerbosStoreServiceMethods.ByName("ListFiles")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
+// RegisterCerbosStoreServiceHandler registers svc as the cerbos.cloud.store.v1.CerbosStoreService
+// implementation on server.
+func RegisterCerbosStoreServiceHandler(server *connect.Server, svc CerbosStoreServiceHandler) {
+	adapter := cerbosStoreServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: cerbosStoreServiceListFilesSpec(), Handler: adapter.listFiles},
+		connect.Method{Spec: cerbosStoreServiceGetCurrentVersionSpec(), Handler: adapter.getCurrentVersion},
+		connect.Method{Spec: cerbosStoreServiceGetFilesSpec(), Handler: adapter.getFiles},
+		connect.Method{Spec: cerbosStoreServiceModifyFilesSpec(), Handler: adapter.modifyFiles},
+		connect.Method{Spec: cerbosStoreServiceReplaceFilesSpec(), Handler: adapter.replaceFiles},
 	)
-	cerbosStoreServiceGetCurrentVersionHandler := connect.NewUnaryHandler(
-		CerbosStoreServiceGetCurrentVersionProcedure,
-		svc.GetCurrentVersion,
-		connect.WithSchema(cerbosStoreServiceMethods.ByName("GetCurrentVersion")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	cerbosStoreServiceGetFilesHandler := connect.NewUnaryHandler(
-		CerbosStoreServiceGetFilesProcedure,
-		svc.GetFiles,
-		connect.WithSchema(cerbosStoreServiceMethods.ByName("GetFiles")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	cerbosStoreServiceModifyFilesHandler := connect.NewUnaryHandler(
-		CerbosStoreServiceModifyFilesProcedure,
-		svc.ModifyFiles,
-		connect.WithSchema(cerbosStoreServiceMethods.ByName("ModifyFiles")),
-		connect.WithHandlerOptions(opts...),
-	)
-	cerbosStoreServiceReplaceFilesHandler := connect.NewUnaryHandler(
-		CerbosStoreServiceReplaceFilesProcedure,
-		svc.ReplaceFiles,
-		connect.WithSchema(cerbosStoreServiceMethods.ByName("ReplaceFiles")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/cerbos.cloud.store.v1.CerbosStoreService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case CerbosStoreServiceListFilesProcedure:
-			cerbosStoreServiceListFilesHandler.ServeHTTP(w, r)
-		case CerbosStoreServiceGetCurrentVersionProcedure:
-			cerbosStoreServiceGetCurrentVersionHandler.ServeHTTP(w, r)
-		case CerbosStoreServiceGetFilesProcedure:
-			cerbosStoreServiceGetFilesHandler.ServeHTTP(w, r)
-		case CerbosStoreServiceModifyFilesProcedure:
-			cerbosStoreServiceModifyFilesHandler.ServeHTTP(w, r)
-		case CerbosStoreServiceReplaceFilesProcedure:
-			cerbosStoreServiceReplaceFilesHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedCerbosStoreServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedCerbosStoreServiceHandler struct{}
 
-func (UnimplementedCerbosStoreServiceHandler) ListFiles(context.Context, *connect.Request[v1.ListFilesRequest]) (*connect.Response[v1.ListFilesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cerbos.cloud.store.v1.CerbosStoreService.ListFiles is not implemented"))
+func (UnimplementedCerbosStoreServiceHandler) ListFiles(context.Context, *v1.ListFilesRequest) (*v1.ListFilesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "cerbos.cloud.store.v1.CerbosStoreService.ListFiles is not implemented")
 }
 
-func (UnimplementedCerbosStoreServiceHandler) GetCurrentVersion(context.Context, *connect.Request[v1.GetCurrentVersionRequest]) (*connect.Response[v1.GetCurrentVersionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cerbos.cloud.store.v1.CerbosStoreService.GetCurrentVersion is not implemented"))
+func (UnimplementedCerbosStoreServiceHandler) GetCurrentVersion(context.Context, *v1.GetCurrentVersionRequest) (*v1.GetCurrentVersionResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "cerbos.cloud.store.v1.CerbosStoreService.GetCurrentVersion is not implemented")
 }
 
-func (UnimplementedCerbosStoreServiceHandler) GetFiles(context.Context, *connect.Request[v1.GetFilesRequest]) (*connect.Response[v1.GetFilesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cerbos.cloud.store.v1.CerbosStoreService.GetFiles is not implemented"))
+func (UnimplementedCerbosStoreServiceHandler) GetFiles(context.Context, *v1.GetFilesRequest) (*v1.GetFilesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "cerbos.cloud.store.v1.CerbosStoreService.GetFiles is not implemented")
 }
 
-func (UnimplementedCerbosStoreServiceHandler) ModifyFiles(context.Context, *connect.Request[v1.ModifyFilesRequest]) (*connect.Response[v1.ModifyFilesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cerbos.cloud.store.v1.CerbosStoreService.ModifyFiles is not implemented"))
+func (UnimplementedCerbosStoreServiceHandler) ModifyFiles(context.Context, *v1.ModifyFilesRequest) (*v1.ModifyFilesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "cerbos.cloud.store.v1.CerbosStoreService.ModifyFiles is not implemented")
 }
 
-func (UnimplementedCerbosStoreServiceHandler) ReplaceFiles(context.Context, *connect.Request[v1.ReplaceFilesRequest]) (*connect.Response[v1.ReplaceFilesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cerbos.cloud.store.v1.CerbosStoreService.ReplaceFiles is not implemented"))
+func (UnimplementedCerbosStoreServiceHandler) ReplaceFiles(context.Context, *v1.ReplaceFilesRequest) (*v1.ReplaceFilesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "cerbos.cloud.store.v1.CerbosStoreService.ReplaceFiles is not implemented")
+}
+
+type cerbosStoreServiceClient struct {
+	client *connect.Client
+}
+
+func (c *cerbosStoreServiceClient) ListFiles(ctx context.Context, req *v1.ListFilesRequest) (*v1.ListFilesResponse, error) {
+	var res v1.ListFilesResponse
+	if err := c.client.CallUnary(ctx, cerbosStoreServiceListFilesSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cerbosStoreServiceClient) GetCurrentVersion(ctx context.Context, req *v1.GetCurrentVersionRequest) (*v1.GetCurrentVersionResponse, error) {
+	var res v1.GetCurrentVersionResponse
+	if err := c.client.CallUnary(ctx, cerbosStoreServiceGetCurrentVersionSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cerbosStoreServiceClient) GetFiles(ctx context.Context, req *v1.GetFilesRequest) (*v1.GetFilesResponse, error) {
+	var res v1.GetFilesResponse
+	if err := c.client.CallUnary(ctx, cerbosStoreServiceGetFilesSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cerbosStoreServiceClient) ModifyFiles(ctx context.Context, req *v1.ModifyFilesRequest) (*v1.ModifyFilesResponse, error) {
+	var res v1.ModifyFilesResponse
+	if err := c.client.CallUnary(ctx, cerbosStoreServiceModifyFilesSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cerbosStoreServiceClient) ReplaceFiles(ctx context.Context, req *v1.ReplaceFilesRequest) (*v1.ReplaceFilesResponse, error) {
+	var res v1.ReplaceFilesResponse
+	if err := c.client.CallUnary(ctx, cerbosStoreServiceReplaceFilesSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type cerbosStoreServiceHandler struct{ svc CerbosStoreServiceHandler }
+
+func (h cerbosStoreServiceHandler) listFiles(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListFilesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListFiles(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cerbosStoreServiceHandler) getCurrentVersion(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetCurrentVersionRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetCurrentVersion(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cerbosStoreServiceHandler) getFiles(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetFilesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetFiles(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cerbosStoreServiceHandler) modifyFiles(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ModifyFilesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ModifyFiles(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cerbosStoreServiceHandler) replaceFiles(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ReplaceFilesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ReplaceFiles(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

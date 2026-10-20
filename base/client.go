@@ -9,7 +9,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	"connectrpc.com/otelconnect"
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-retryablehttp"
@@ -22,38 +23,38 @@ import (
 var ErrTooManyFailures = errors.New("too many failures: backing off")
 
 type Client struct {
-	HTTPClient     *http.Client
-	circuitBreaker *circuitBreakerInterceptor
+	HTTPClient            *http.Client
+	circuitBreakerEnabled *bool
 	ClientConf
 }
 
-func NewClient(conf ClientConf) (c Client, opts []connect.ClientOption, _ error) {
-	otelConnect, err := otelconnect.NewInterceptor()
+func NewClient(conf ClientConf) (c Client, opts []connecthttp.Option, interceptors []connect.ClientInterceptor, _ error) {
+	otelConnect, err := otelconnect.NewClientInterceptor()
 	if err != nil {
-		return c, opts, fmt.Errorf("failed to create otel interceptor: %w", err)
+		return c, opts, interceptors, fmt.Errorf("failed to create otel interceptor: %w", err)
 	}
 
-	//nolint:prealloc
-	opts = []connect.ClientOption{
-		connect.WithSendGzip(),
-		connect.WithCompressMinBytes(1024),
-		connect.WithInterceptors(
-			otelConnect,
-			newUserAgentInterceptor(conf.PDPIdentifier.GetVersion()),
-		),
+	opts = []connecthttp.Option{
+		connecthttp.WithSendGzip(),
+		connecthttp.WithCompressMinBytes(1024),
 	}
 
 	retryableHTTPClient := mkRetryableHTTPClient(conf)
 	tokenSetter := newTokenSetter(conf, retryableHTTPClient, opts...)
 
-	circuitBreaker := newCircuitBreakerInterceptor()
-	opts = append(opts, connect.WithInterceptors(circuitBreaker, newAuthInterceptor(tokenSetter)))
+	circuitBreakerEnabled := new(true)
+	interceptors = []connect.ClientInterceptor{
+		otelConnect,
+		newUserAgentInterceptor(conf.PDPIdentifier.GetVersion()),
+		newCircuitBreakerInterceptor(circuitBreakerEnabled),
+		newAuthInterceptor(tokenSetter),
+	}
 
 	return Client{
-		ClientConf:     conf,
-		HTTPClient:     retryableHTTPClient,
-		circuitBreaker: circuitBreaker,
-	}, opts, nil
+		circuitBreakerEnabled: circuitBreakerEnabled,
+		ClientConf:            conf,
+		HTTPClient:            retryableHTTPClient,
+	}, opts, interceptors, nil
 }
 
 func (c Client) StdHTTPClient() *http.Client {

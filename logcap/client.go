@@ -5,33 +5,36 @@ package logcap
 
 import (
 	"context"
-	"strings"
+	"sync"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 
 	"github.com/cerbos/cloud-api/base"
 	logsv1 "github.com/cerbos/cloud-api/genpb/cerbos/cloud/logs/v1"
 	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/logs/v1/logsv1connect"
 )
 
+var ingestRPCSpec = sync.OnceValue(func() connect.Spec {
+	return connect.Spec{
+		StreamType: connect.StreamTypeUnary,
+		Schema:     logsv1.File_cerbos_cloud_logs_v1_logs_proto.Services().ByName("CerbosLogsService").Methods().ByName("Ingest"),
+		Procedure:  logsv1connect.CerbosLogsServiceIngestProcedure,
+	}
+})
+
 type Client struct {
 	rpcClient    logsv1connect.CerbosLogsServiceClient
-	rawRPCClient *connect.Client[logsv1.RawIngestRequest, logsv1.IngestResponse]
+	rawRPCClient *connect.Client
 	base.Client
 }
 
-func NewClient(baseClient base.Client, options []connect.ClientOption) (*Client, error) {
+func NewClient(baseClient base.Client, options []connecthttp.Option, interceptors []connect.ClientInterceptor) (*Client, error) {
 	httpClient := baseClient.StdHTTPClient() // Bidi streams don't work with retryable HTTP client.
-	rpcClient := logsv1connect.NewCerbosLogsServiceClient(httpClient, baseClient.APIEndpoint, options...)
+	rpcClient := logsv1connect.NewCerbosLogsServiceClient(connect.NewClient(connecthttp.NewTransport(httpClient, baseClient.APIEndpoint, options...), interceptors...))
 
-	ingestSchema := logsv1.File_cerbos_cloud_logs_v1_logs_proto.Services().ByName("CerbosLogsService").Methods().ByName("Ingest")
-	rawRPCClient := connect.NewClient[logsv1.RawIngestRequest, logsv1.IngestResponse](
-		httpClient,
-		strings.TrimRight(baseClient.APIEndpoint, "/")+logsv1connect.CerbosLogsServiceIngestProcedure,
-		connect.WithSchema(ingestSchema),
-		connect.WithClientOptions(options...),
-	)
+	rawRPCClient := connect.NewClient(connecthttp.NewTransport(httpClient, baseClient.APIEndpoint, options...), interceptors...)
 
 	return &Client{
 		Client:       baseClient,
@@ -81,15 +84,15 @@ func (c *Client) Ingest(ctx context.Context, target Target, batch *logsv1.Ingest
 		req.Target = target.ToProto()
 	}
 
-	resp, err := c.rpcClient.Ingest(ctx, connect.NewRequest(req))
+	resp, err := c.rpcClient.Ingest(ctx, req)
 	if err != nil {
 		log.Error(err, "Ingest RPC failed")
 		return 0, err
 	}
 
-	base.LogResponsePayload(log, resp.Msg)
+	base.LogResponsePayload(log, resp)
 
-	return resp.Msg.GetBackoff().GetDuration().AsDuration(), nil
+	return resp.GetBackoff().GetDuration().AsDuration(), nil
 }
 
 // IngestRaw is Ingest for callers that already hold the batch in serialized
@@ -107,13 +110,14 @@ func (c *Client) IngestRaw(ctx context.Context, target Target, batch []byte) (ti
 		req.Target = target.ToProto()
 	}
 
-	resp, err := c.rawRPCClient.CallUnary(ctx, connect.NewRequest(req))
+	var resp logsv1.IngestResponse
+	err := c.rawRPCClient.CallUnary(ctx, ingestRPCSpec(), req, &resp)
 	if err != nil {
 		log.Error(err, "Ingest RPC failed")
 		return 0, err
 	}
 
-	base.LogResponsePayload(log, resp.Msg)
+	base.LogResponsePayload(log, &resp)
 
-	return resp.Msg.GetBackoff().GetDuration().AsDuration(), nil
+	return resp.GetBackoff().GetDuration().AsDuration(), nil
 }

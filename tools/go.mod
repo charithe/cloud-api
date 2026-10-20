@@ -3,7 +3,7 @@ module github.com/cerbos/cloud-api/tools
 go 1.26.7
 
 require (
-	connectrpc.com/connect v1.21.0
+	connectrpc.com/connect/v2 v2.0.1
 	github.com/cerbos/actions v0.0.0-20261012092942-f8054d41c7cd
 	github.com/cerbos/protoc-gen-go-hashpb v0.5.0
 	github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25

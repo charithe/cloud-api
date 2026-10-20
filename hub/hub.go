@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"sync"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 
 	"github.com/cerbos/cloud-api/base"
 	"github.com/cerbos/cloud-api/bundle"
@@ -22,8 +23,9 @@ var (
 )
 
 type Hub struct {
-	opts   []connect.ClientOption
-	client base.Client
+	opts         []connecthttp.Option
+	interceptors []connect.ClientInterceptor
+	client       base.Client
 }
 
 func Get(conf base.ClientConf) (*Hub, error) {
@@ -52,29 +54,30 @@ func Get(conf base.ClientConf) (*Hub, error) {
 }
 
 func New(conf base.ClientConf) (*Hub, error) {
-	client, opts, err := base.NewClient(conf)
+	client, opts, interceptors, err := base.NewClient(conf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base Hub client: %w", err)
 	}
 
 	return &Hub{
-		client: client,
-		opts:   opts,
+		client:       client,
+		opts:         opts,
+		interceptors: interceptors,
 	}, nil
 }
 
 func (h *Hub) BundleClient(conf bundle.ClientConf) (*bundle.Client, error) {
-	return bundle.NewClient(conf, h.client, h.opts)
+	return bundle.NewClient(conf, h.client, h.opts, h.interceptors)
 }
 
 func (h *Hub) LogCapClient() (*logcap.Client, error) {
-	return logcap.NewClient(h.client, h.opts)
+	return logcap.NewClient(h.client, h.opts, h.interceptors)
 }
 
 func (h *Hub) StoreClient() (store.Client, error) {
-	return store.NewClient(h.client, h.opts)
+	return store.NewClient(h.client, h.opts, h.interceptors)
 }
 
 func (h *Hub) ProvisionClient() (provision.Client, error) {
-	return provision.NewClient(h.client, h.opts)
+	return provision.NewClient(h.client, h.opts, h.interceptors)
 }

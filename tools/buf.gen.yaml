@@ -11,7 +11,7 @@ plugins:
   - local:
       - go
       - run
-      - connectrpc.com/connect/cmd/protoc-gen-connect-go
+      - connectrpc.com/connect/v2/cmd/protoc-gen-connect-go
     out: genpb
     opt: paths=source_relative
   - local:

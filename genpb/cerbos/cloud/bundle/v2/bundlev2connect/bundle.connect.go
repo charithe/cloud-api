@@ -8,135 +8,187 @@
 package bundlev2connect
 
 import (
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 	context "context"
-	errors "errors"
 	v2 "github.com/cerbos/cloud-api/genpb/cerbos/cloud/bundle/v2"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// CerbosBundleServiceName is the fully-qualified name of the CerbosBundleService service.
 	CerbosBundleServiceName = "cerbos.cloud.bundle.v2.CerbosBundleService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// CerbosBundleServiceGetBundleProcedure is the fully-qualified name of the CerbosBundleService's
+	// CerbosBundleServiceGetBundleProcedure is the procedure name of the CerbosBundleService's
 	// GetBundle RPC.
 	CerbosBundleServiceGetBundleProcedure = "/cerbos.cloud.bundle.v2.CerbosBundleService/GetBundle"
-	// CerbosBundleServiceWatchBundleProcedure is the fully-qualified name of the CerbosBundleService's
+	// CerbosBundleServiceWatchBundleProcedure is the procedure name of the CerbosBundleService's
 	// WatchBundle RPC.
 	CerbosBundleServiceWatchBundleProcedure = "/cerbos.cloud.bundle.v2.CerbosBundleService/WatchBundle"
 )
 
+var (
+	cerbosBundleServiceGetBundleSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v2.File_cerbos_cloud_bundle_v2_bundle_proto.Services().ByName("CerbosBundleService").Methods().ByName("GetBundle"),
+			Procedure:  CerbosBundleServiceGetBundleProcedure,
+		}
+	})
+	cerbosBundleServiceWatchBundleSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeBidi,
+			Schema:     v2.File_cerbos_cloud_bundle_v2_bundle_proto.Services().ByName("CerbosBundleService").Methods().ByName("WatchBundle"),
+			Procedure:  CerbosBundleServiceWatchBundleProcedure,
+		}
+	})
+)
+
 // CerbosBundleServiceClient is a client for the cerbos.cloud.bundle.v2.CerbosBundleService service.
 type CerbosBundleServiceClient interface {
-	GetBundle(context.Context, *connect.Request[v2.GetBundleRequest]) (*connect.Response[v2.GetBundleResponse], error)
-	WatchBundle(context.Context) *connect.BidiStreamForClient[v2.WatchBundleRequest, v2.WatchBundleResponse]
+	GetBundle(context.Context, *v2.GetBundleRequest) (*v2.GetBundleResponse, error)
+	WatchBundle(context.Context) (CerbosBundleServiceWatchBundleClientStream, error)
 }
 
 // NewCerbosBundleServiceClient constructs a client for the
-// cerbos.cloud.bundle.v2.CerbosBundleService service. By default, it uses the Connect protocol with
-// the binary Protobuf Codec, asks for gzipped responses, and sends uncompressed requests. To use
-// the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewCerbosBundleServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) CerbosBundleServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	cerbosBundleServiceMethods := v2.File_cerbos_cloud_bundle_v2_bundle_proto.Services().ByName("CerbosBundleService").Methods()
-	return &cerbosBundleServiceClient{
-		getBundle: connect.NewClient[v2.GetBundleRequest, v2.GetBundleResponse](
-			httpClient,
-			baseURL+CerbosBundleServiceGetBundleProcedure,
-			connect.WithSchema(cerbosBundleServiceMethods.ByName("GetBundle")),
-			connect.WithClientOptions(opts...),
-		),
-		watchBundle: connect.NewClient[v2.WatchBundleRequest, v2.WatchBundleResponse](
-			httpClient,
-			baseURL+CerbosBundleServiceWatchBundleProcedure,
-			connect.WithSchema(cerbosBundleServiceMethods.ByName("WatchBundle")),
-			connect.WithClientOptions(opts...),
-		),
+// cerbos.cloud.bundle.v2.CerbosBundleService service. Multiple service clients may share a single
+// connect.Client.
+func NewCerbosBundleServiceClient(client *connect.Client) CerbosBundleServiceClient {
+	return &cerbosBundleServiceClient{client: client}
+}
+
+// CerbosBundleServiceWatchBundleClientStream is the client stream for the CerbosBundleService's
+// WatchBundle RPC.
+type CerbosBundleServiceWatchBundleClientStream struct {
+	stream connect.ClientStream
+}
+
+// SendHeaders opens the stream and flushes the request headers without a message. The first Send or
+// Receive does this implicitly.
+func (s CerbosBundleServiceWatchBundleClientStream) SendHeaders() error {
+	return s.stream.SendHeaders()
+}
+
+// Send sends a request message to the server.
+func (s CerbosBundleServiceWatchBundleClientStream) Send(req *v2.WatchBundleRequest) error {
+	return s.stream.Send(req)
+}
+
+// CloseSend closes the request side of the stream.
+func (s CerbosBundleServiceWatchBundleClientStream) CloseSend() error {
+	return s.stream.CloseSend()
+}
+
+// Receive returns the next response message from the server.
+func (s CerbosBundleServiceWatchBundleClientStream) Receive() (*v2.WatchBundleResponse, error) {
+	var res v2.WatchBundleResponse
+	if err := s.stream.Receive(&res); err != nil {
+		return nil, err
 	}
+	return &res, nil
 }
 
-// cerbosBundleServiceClient implements CerbosBundleServiceClient.
-type cerbosBundleServiceClient struct {
-	getBundle   *connect.Client[v2.GetBundleRequest, v2.GetBundleResponse]
-	watchBundle *connect.Client[v2.WatchBundleRequest, v2.WatchBundleResponse]
-}
-
-// GetBundle calls cerbos.cloud.bundle.v2.CerbosBundleService.GetBundle.
-func (c *cerbosBundleServiceClient) GetBundle(ctx context.Context, req *connect.Request[v2.GetBundleRequest]) (*connect.Response[v2.GetBundleResponse], error) {
-	return c.getBundle.CallUnary(ctx, req)
-}
-
-// WatchBundle calls cerbos.cloud.bundle.v2.CerbosBundleService.WatchBundle.
-func (c *cerbosBundleServiceClient) WatchBundle(ctx context.Context) *connect.BidiStreamForClient[v2.WatchBundleRequest, v2.WatchBundleResponse] {
-	return c.watchBundle.CallBidiStream(ctx)
+// Close releases the stream's resources. It is idempotent and is typically deferred to clean up a
+// stream abandoned before io.EOF.
+func (s CerbosBundleServiceWatchBundleClientStream) Close() error {
+	return s.stream.Close()
 }
 
 // CerbosBundleServiceHandler is an implementation of the cerbos.cloud.bundle.v2.CerbosBundleService
 // service.
 type CerbosBundleServiceHandler interface {
-	GetBundle(context.Context, *connect.Request[v2.GetBundleRequest]) (*connect.Response[v2.GetBundleResponse], error)
-	WatchBundle(context.Context, *connect.BidiStream[v2.WatchBundleRequest, v2.WatchBundleResponse]) error
+	GetBundle(context.Context, *v2.GetBundleRequest) (*v2.GetBundleResponse, error)
+	WatchBundle(context.Context, CerbosBundleServiceWatchBundleServerStream) error
 }
 
-// NewCerbosBundleServiceHandler builds an HTTP handler from the service implementation. It returns
-// the path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewCerbosBundleServiceHandler(svc CerbosBundleServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	cerbosBundleServiceMethods := v2.File_cerbos_cloud_bundle_v2_bundle_proto.Services().ByName("CerbosBundleService").Methods()
-	cerbosBundleServiceGetBundleHandler := connect.NewUnaryHandler(
-		CerbosBundleServiceGetBundleProcedure,
-		svc.GetBundle,
-		connect.WithSchema(cerbosBundleServiceMethods.ByName("GetBundle")),
-		connect.WithHandlerOptions(opts...),
+// RegisterCerbosBundleServiceHandler registers svc as the
+// cerbos.cloud.bundle.v2.CerbosBundleService implementation on server.
+func RegisterCerbosBundleServiceHandler(server *connect.Server, svc CerbosBundleServiceHandler) {
+	adapter := cerbosBundleServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: cerbosBundleServiceGetBundleSpec(), Handler: adapter.getBundle},
+		connect.Method{Spec: cerbosBundleServiceWatchBundleSpec(), Handler: adapter.watchBundle},
 	)
-	cerbosBundleServiceWatchBundleHandler := connect.NewBidiStreamHandler(
-		CerbosBundleServiceWatchBundleProcedure,
-		svc.WatchBundle,
-		connect.WithSchema(cerbosBundleServiceMethods.ByName("WatchBundle")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/cerbos.cloud.bundle.v2.CerbosBundleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case CerbosBundleServiceGetBundleProcedure:
-			cerbosBundleServiceGetBundleHandler.ServeHTTP(w, r)
-		case CerbosBundleServiceWatchBundleProcedure:
-			cerbosBundleServiceWatchBundleHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
+}
+
+// CerbosBundleServiceWatchBundleServerStream is the server stream for the CerbosBundleService's
+// WatchBundle RPC.
+type CerbosBundleServiceWatchBundleServerStream struct {
+	stream connect.ServerStream
+}
+
+// Receive returns the next request message from the client.
+func (s CerbosBundleServiceWatchBundleServerStream) Receive() (*v2.WatchBundleRequest, error) {
+	var req v2.WatchBundleRequest
+	if err := s.stream.Receive(&req); err != nil {
+		return nil, err
+	}
+	return &req, nil
+}
+
+// SendHeaders flushes the response headers without a message. The first Send does this implicitly.
+func (s CerbosBundleServiceWatchBundleServerStream) SendHeaders() error {
+	return s.stream.SendHeaders()
+}
+
+// Send sends a response message to the client.
+func (s CerbosBundleServiceWatchBundleServerStream) Send(res *v2.WatchBundleResponse) error {
+	return s.stream.Send(res)
 }
 
 // UnimplementedCerbosBundleServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedCerbosBundleServiceHandler struct{}
 
-func (UnimplementedCerbosBundleServiceHandler) GetBundle(context.Context, *connect.Request[v2.GetBundleRequest]) (*connect.Response[v2.GetBundleResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cerbos.cloud.bundle.v2.CerbosBundleService.GetBundle is not implemented"))
+func (UnimplementedCerbosBundleServiceHandler) GetBundle(context.Context, *v2.GetBundleRequest) (*v2.GetBundleResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "cerbos.cloud.bundle.v2.CerbosBundleService.GetBundle is not implemented")
 }
 
-func (UnimplementedCerbosBundleServiceHandler) WatchBundle(context.Context, *connect.BidiStream[v2.WatchBundleRequest, v2.WatchBundleResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("cerbos.cloud.bundle.v2.CerbosBundleService.WatchBundle is not implemented"))
+func (UnimplementedCerbosBundleServiceHandler) WatchBundle(context.Context, CerbosBundleServiceWatchBundleServerStream) error {
+	return connect.NewError(connect.CodeUnimplemented, "cerbos.cloud.bundle.v2.CerbosBundleService.WatchBundle is not implemented")
+}
+
+type cerbosBundleServiceClient struct {
+	client *connect.Client
+}
+
+func (c *cerbosBundleServiceClient) GetBundle(ctx context.Context, req *v2.GetBundleRequest) (*v2.GetBundleResponse, error) {
+	var res v2.GetBundleResponse
+	if err := c.client.CallUnary(ctx, cerbosBundleServiceGetBundleSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cerbosBundleServiceClient) WatchBundle(ctx context.Context) (CerbosBundleServiceWatchBundleClientStream, error) {
+	stream, err := c.client.CallClientStream(ctx, cerbosBundleServiceWatchBundleSpec())
+	if err != nil {
+		return CerbosBundleServiceWatchBundleClientStream{}, err
+	}
+	return CerbosBundleServiceWatchBundleClientStream{stream: stream}, nil
+}
+
+type cerbosBundleServiceHandler struct{ svc CerbosBundleServiceHandler }
+
+func (h cerbosBundleServiceHandler) getBundle(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v2.GetBundleRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetBundle(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cerbosBundleServiceHandler) watchBundle(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	return h.svc.WatchBundle(ctx, CerbosBundleServiceWatchBundleServerStream{stream: stream})
 }

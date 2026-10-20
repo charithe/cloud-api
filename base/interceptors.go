@@ -7,28 +7,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"runtime"
 	"runtime/debug"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"github.com/failsafe-go/failsafe-go"
 	"github.com/failsafe-go/failsafe-go/circuitbreaker"
 )
 
-var circuitBreaker failsafe.Executor[connect.AnyResponse]
+var circuitBreaker failsafe.Executor[connect.ClientStream]
 
 func init() {
 	circuitBreaker = newCircuitBreaker()
 }
 
-type userAgentInterceptor struct {
-	userAgent  string
-	pdpVersion string
-}
-
-func newUserAgentInterceptor(pdpVersion string) userAgentInterceptor {
+func newUserAgentInterceptor(pdpVersion string) connect.ClientInterceptor {
 	version := "unknown"
 	if info, ok := debug.ReadBuildInfo(); ok {
 		if info.Main.Sum != "" {
@@ -42,144 +36,83 @@ func newUserAgentInterceptor(pdpVersion string) userAgentInterceptor {
 		}
 	}
 
-	return userAgentInterceptor{
-		userAgent:  fmt.Sprintf("cerbos-cloud-client/%s (%s; %s)", version, runtime.GOOS, runtime.GOARCH),
-		pdpVersion: pdpVersion,
+	userAgent := fmt.Sprintf("cerbos-cloud-client/%s (%s; %s)", version, runtime.GOOS, runtime.GOARCH)
+
+	return func(next connect.ClientFunc) connect.ClientFunc {
+		return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
+			clientInfo, ok := connect.CallInfoForClientContext(ctx)
+			if !ok {
+				ctx, clientInfo = connect.NewClientContext(ctx)
+			}
+
+			clientInfo.RequestHeader().Set("User-Agent", userAgent)
+			if pdpVersion != "" {
+				clientInfo.RequestHeader().Set("X-Cerbos-PDP-Version", pdpVersion)
+			}
+
+			return next(ctx, spec)
+		}
 	}
 }
 
-func (uai userAgentInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		req.Header().Set("User-Agent", uai.userAgent)
-		if uai.pdpVersion != "" {
-			req.Header().Set("X-Cerbos-PDP-Version", uai.pdpVersion)
+func newAuthInterceptor(tokenSetter *tokenSetter) connect.ClientInterceptor {
+	return func(next connect.ClientFunc) connect.ClientFunc {
+		return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
+			clientInfo, ok := connect.CallInfoForClientContext(ctx)
+			if !ok {
+				ctx, clientInfo = connect.NewClientContext(ctx)
+			}
+
+			if err := tokenSetter.SetHeader(ctx, clientInfo.RequestHeader()); err != nil {
+				return nil, err
+			}
+
+			return next(ctx, spec)
 		}
-		return next(ctx, req)
+	}
+}
+
+func newCircuitBreakerInterceptor(enabled *bool) connect.ClientInterceptor {
+	return func(next connect.ClientFunc) connect.ClientFunc {
+		return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
+			if !(*enabled) {
+				return next(ctx, spec)
+			}
+
+			resp, err := circuitBreaker.Get(func() (connect.ClientStream, error) {
+				return next(ctx, spec)
+			})
+
+			if errors.Is(err, circuitbreaker.ErrOpen) {
+				return resp, ErrTooManyFailures
+			}
+
+			return &circuitBreakerClientStream{cb: circuitBreaker, ClientStream: resp}, err
+		}
+	}
+}
+
+type circuitBreakerClientStream struct {
+	cb failsafe.Executor[connect.ClientStream]
+	connect.ClientStream
+}
+
+func (cbcs *circuitBreakerClientStream) Receive(msg any) error {
+	_, err := cbcs.cb.Get(func() (connect.ClientStream, error) {
+		return nil, cbcs.ClientStream.Receive(msg)
 	})
-}
 
-func (uai userAgentInterceptor) WrapStreamingClient(c connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
-		return uaStreamingClientConn{StreamingClientConn: c(ctx, spec), userAgent: uai.userAgent, pdpVersion: uai.pdpVersion}
+	if errors.Is(err, circuitbreaker.ErrOpen) {
+		return ErrTooManyFailures
 	}
+	return err
 }
 
-func (uai userAgentInterceptor) WrapStreamingHandler(h connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return h
-}
-
-type uaStreamingClientConn struct {
-	connect.StreamingClientConn
-	userAgent  string
-	pdpVersion string
-}
-
-func (uas uaStreamingClientConn) RequestHeader() http.Header {
-	h := uas.StreamingClientConn.RequestHeader()
-	h.Set("User-Agent", uas.userAgent)
-	if uas.pdpVersion != "" {
-		h.Set("X-Cerbos-PDP-Version", uas.pdpVersion)
-	}
-	return h
-}
-
-type authInterceptor struct {
-	tokenSetter *tokenSetter
-}
-
-func newAuthInterceptor(tokenSetter *tokenSetter) authInterceptor {
-	return authInterceptor{tokenSetter: tokenSetter}
-}
-
-func (ai authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		err := ai.tokenSetter.SetHeader(ctx, req.Header())
-		if err != nil {
-			return nil, err
-		}
-
-		return next(ctx, req)
-	})
-}
-
-func (ai authInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
-		conn := next(ctx, spec)
-		err := ai.tokenSetter.SetHeader(ctx, conn.RequestHeader())
-
-		return authStreamingClientConn{
-			StreamingClientConn: conn,
-			err:                 err,
-		}
-	}
-}
-
-func (ai authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return next
-}
-
-type authStreamingClientConn struct {
-	connect.StreamingClientConn
-	err error
-}
-
-func (as authStreamingClientConn) Send(req any) error {
-	if as.err != nil {
-		return as.err
-	}
-
-	return as.StreamingClientConn.Send(req)
-}
-
-func (as authStreamingClientConn) Receive(req any) error {
-	if as.err != nil {
-		return as.err
-	}
-
-	return as.StreamingClientConn.Receive(req)
-}
-
-type circuitBreakerInterceptor struct {
-	enabled bool
-}
-
-func newCircuitBreakerInterceptor() *circuitBreakerInterceptor {
-	return &circuitBreakerInterceptor{enabled: true}
-}
-
-func (cbi *circuitBreakerInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		if !cbi.enabled {
-			return next(ctx, req)
-		}
-
-		resp, err := circuitBreaker.Get(func() (connect.AnyResponse, error) {
-			return next(ctx, req)
-		})
-
-		if errors.Is(err, circuitbreaker.ErrOpen) {
-			return resp, ErrTooManyFailures
-		}
-
-		return resp, err
-	})
-}
-
-func (cbi *circuitBreakerInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
-		return next(ctx, spec)
-	}
-}
-
-func (cbi *circuitBreakerInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return next
-}
-
-func newCircuitBreaker() failsafe.Executor[connect.AnyResponse] {
+func newCircuitBreaker() failsafe.Executor[connect.ClientStream] {
 	return failsafe.With(
-		circuitbreaker.NewBuilder[connect.AnyResponse]().
-			WithFailureRateThreshold(0.6, 5, 15*time.Second). // open circuit if >=5 requests have been made in the last 15 seconds and >=60% of them have failed
-			HandleIf(func(_ connect.AnyResponse, err error) bool {
+		circuitbreaker.NewBuilder[connect.ClientStream]().
+			WithFailureRateThreshold(0.5, 5, 15*time.Second). // open circuit if >=5 requests have been made in the last 15 seconds and >=50% of them have failed
+			HandleIf(func(_ connect.ClientStream, err error) bool {
 				if err == nil {
 					return false
 				}

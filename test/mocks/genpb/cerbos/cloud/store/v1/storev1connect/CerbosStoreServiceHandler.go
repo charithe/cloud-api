@@ -10,7 +10,6 @@ package mockstorev1connect
 import (
 	"context"
 
-	"connectrpc.com/connect"
 	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/store/v1"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -52,27 +51,27 @@ func (_m *CerbosStoreServiceHandler) EXPECT() *CerbosStoreServiceHandler_Expecte
 }
 
 // GetCurrentVersion provides a mock function for the type CerbosStoreServiceHandler
-func (_mock *CerbosStoreServiceHandler) GetCurrentVersion(context1 context.Context, request *connect.Request[storev1.GetCurrentVersionRequest]) (*connect.Response[storev1.GetCurrentVersionResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *CerbosStoreServiceHandler) GetCurrentVersion(context1 context.Context, getCurrentVersionRequest *storev1.GetCurrentVersionRequest) (*storev1.GetCurrentVersionResponse, error) {
+	ret := _mock.Called(context1, getCurrentVersionRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetCurrentVersion")
 	}
 
-	var r0 *connect.Response[storev1.GetCurrentVersionResponse]
+	var r0 *storev1.GetCurrentVersionResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.GetCurrentVersionRequest]) (*connect.Response[storev1.GetCurrentVersionResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.GetCurrentVersionRequest) (*storev1.GetCurrentVersionResponse, error)); ok {
+		return returnFunc(context1, getCurrentVersionRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.GetCurrentVersionRequest]) *connect.Response[storev1.GetCurrentVersionResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.GetCurrentVersionRequest) *storev1.GetCurrentVersionResponse); ok {
+		r0 = returnFunc(context1, getCurrentVersionRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[storev1.GetCurrentVersionResponse])
+			r0 = ret.Get(0).(*storev1.GetCurrentVersionResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[storev1.GetCurrentVersionRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *storev1.GetCurrentVersionRequest) error); ok {
+		r1 = returnFunc(context1, getCurrentVersionRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -86,20 +85,20 @@ type CerbosStoreServiceHandler_GetCurrentVersion_Call struct {
 
 // GetCurrentVersion is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[storev1.GetCurrentVersionRequest]
-func (_e *CerbosStoreServiceHandler_Expecter) GetCurrentVersion(context1 any, request any) *CerbosStoreServiceHandler_GetCurrentVersion_Call {
-	return &CerbosStoreServiceHandler_GetCurrentVersion_Call{Call: _e.mock.On("GetCurrentVersion", context1, request)}
+//   - getCurrentVersionRequest *storev1.GetCurrentVersionRequest
+func (_e *CerbosStoreServiceHandler_Expecter) GetCurrentVersion(context1 any, getCurrentVersionRequest any) *CerbosStoreServiceHandler_GetCurrentVersion_Call {
+	return &CerbosStoreServiceHandler_GetCurrentVersion_Call{Call: _e.mock.On("GetCurrentVersion", context1, getCurrentVersionRequest)}
 }
 
-func (_c *CerbosStoreServiceHandler_GetCurrentVersion_Call) Run(run func(context1 context.Context, request *connect.Request[storev1.GetCurrentVersionRequest])) *CerbosStoreServiceHandler_GetCurrentVersion_Call {
+func (_c *CerbosStoreServiceHandler_GetCurrentVersion_Call) Run(run func(context1 context.Context, getCurrentVersionRequest *storev1.GetCurrentVersionRequest)) *CerbosStoreServiceHandler_GetCurrentVersion_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[storev1.GetCurrentVersionRequest]
+		var arg1 *storev1.GetCurrentVersionRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[storev1.GetCurrentVersionRequest])
+			arg1 = args[1].(*storev1.GetCurrentVersionRequest)
 		}
 		run(
 			arg0,
@@ -109,38 +108,38 @@ func (_c *CerbosStoreServiceHandler_GetCurrentVersion_Call) Run(run func(context
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_GetCurrentVersion_Call) Return(response *connect.Response[storev1.GetCurrentVersionResponse], err error) *CerbosStoreServiceHandler_GetCurrentVersion_Call {
-	_c.Call.Return(response, err)
+func (_c *CerbosStoreServiceHandler_GetCurrentVersion_Call) Return(getCurrentVersionResponse *storev1.GetCurrentVersionResponse, err error) *CerbosStoreServiceHandler_GetCurrentVersion_Call {
+	_c.Call.Return(getCurrentVersionResponse, err)
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_GetCurrentVersion_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[storev1.GetCurrentVersionRequest]) (*connect.Response[storev1.GetCurrentVersionResponse], error)) *CerbosStoreServiceHandler_GetCurrentVersion_Call {
+func (_c *CerbosStoreServiceHandler_GetCurrentVersion_Call) RunAndReturn(run func(context1 context.Context, getCurrentVersionRequest *storev1.GetCurrentVersionRequest) (*storev1.GetCurrentVersionResponse, error)) *CerbosStoreServiceHandler_GetCurrentVersion_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetFiles provides a mock function for the type CerbosStoreServiceHandler
-func (_mock *CerbosStoreServiceHandler) GetFiles(context1 context.Context, request *connect.Request[storev1.GetFilesRequest]) (*connect.Response[storev1.GetFilesResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *CerbosStoreServiceHandler) GetFiles(context1 context.Context, getFilesRequest *storev1.GetFilesRequest) (*storev1.GetFilesResponse, error) {
+	ret := _mock.Called(context1, getFilesRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetFiles")
 	}
 
-	var r0 *connect.Response[storev1.GetFilesResponse]
+	var r0 *storev1.GetFilesResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.GetFilesRequest]) (*connect.Response[storev1.GetFilesResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.GetFilesRequest) (*storev1.GetFilesResponse, error)); ok {
+		return returnFunc(context1, getFilesRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.GetFilesRequest]) *connect.Response[storev1.GetFilesResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.GetFilesRequest) *storev1.GetFilesResponse); ok {
+		r0 = returnFunc(context1, getFilesRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[storev1.GetFilesResponse])
+			r0 = ret.Get(0).(*storev1.GetFilesResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[storev1.GetFilesRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *storev1.GetFilesRequest) error); ok {
+		r1 = returnFunc(context1, getFilesRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -154,20 +153,20 @@ type CerbosStoreServiceHandler_GetFiles_Call struct {
 
 // GetFiles is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[storev1.GetFilesRequest]
-func (_e *CerbosStoreServiceHandler_Expecter) GetFiles(context1 any, request any) *CerbosStoreServiceHandler_GetFiles_Call {
-	return &CerbosStoreServiceHandler_GetFiles_Call{Call: _e.mock.On("GetFiles", context1, request)}
+//   - getFilesRequest *storev1.GetFilesRequest
+func (_e *CerbosStoreServiceHandler_Expecter) GetFiles(context1 any, getFilesRequest any) *CerbosStoreServiceHandler_GetFiles_Call {
+	return &CerbosStoreServiceHandler_GetFiles_Call{Call: _e.mock.On("GetFiles", context1, getFilesRequest)}
 }
 
-func (_c *CerbosStoreServiceHandler_GetFiles_Call) Run(run func(context1 context.Context, request *connect.Request[storev1.GetFilesRequest])) *CerbosStoreServiceHandler_GetFiles_Call {
+func (_c *CerbosStoreServiceHandler_GetFiles_Call) Run(run func(context1 context.Context, getFilesRequest *storev1.GetFilesRequest)) *CerbosStoreServiceHandler_GetFiles_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[storev1.GetFilesRequest]
+		var arg1 *storev1.GetFilesRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[storev1.GetFilesRequest])
+			arg1 = args[1].(*storev1.GetFilesRequest)
 		}
 		run(
 			arg0,
@@ -177,38 +176,38 @@ func (_c *CerbosStoreServiceHandler_GetFiles_Call) Run(run func(context1 context
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_GetFiles_Call) Return(response *connect.Response[storev1.GetFilesResponse], err error) *CerbosStoreServiceHandler_GetFiles_Call {
-	_c.Call.Return(response, err)
+func (_c *CerbosStoreServiceHandler_GetFiles_Call) Return(getFilesResponse *storev1.GetFilesResponse, err error) *CerbosStoreServiceHandler_GetFiles_Call {
+	_c.Call.Return(getFilesResponse, err)
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_GetFiles_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[storev1.GetFilesRequest]) (*connect.Response[storev1.GetFilesResponse], error)) *CerbosStoreServiceHandler_GetFiles_Call {
+func (_c *CerbosStoreServiceHandler_GetFiles_Call) RunAndReturn(run func(context1 context.Context, getFilesRequest *storev1.GetFilesRequest) (*storev1.GetFilesResponse, error)) *CerbosStoreServiceHandler_GetFiles_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ListFiles provides a mock function for the type CerbosStoreServiceHandler
-func (_mock *CerbosStoreServiceHandler) ListFiles(context1 context.Context, request *connect.Request[storev1.ListFilesRequest]) (*connect.Response[storev1.ListFilesResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *CerbosStoreServiceHandler) ListFiles(context1 context.Context, listFilesRequest *storev1.ListFilesRequest) (*storev1.ListFilesResponse, error) {
+	ret := _mock.Called(context1, listFilesRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListFiles")
 	}
 
-	var r0 *connect.Response[storev1.ListFilesResponse]
+	var r0 *storev1.ListFilesResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.ListFilesRequest]) (*connect.Response[storev1.ListFilesResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.ListFilesRequest) (*storev1.ListFilesResponse, error)); ok {
+		return returnFunc(context1, listFilesRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.ListFilesRequest]) *connect.Response[storev1.ListFilesResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.ListFilesRequest) *storev1.ListFilesResponse); ok {
+		r0 = returnFunc(context1, listFilesRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[storev1.ListFilesResponse])
+			r0 = ret.Get(0).(*storev1.ListFilesResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[storev1.ListFilesRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *storev1.ListFilesRequest) error); ok {
+		r1 = returnFunc(context1, listFilesRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -222,20 +221,20 @@ type CerbosStoreServiceHandler_ListFiles_Call struct {
 
 // ListFiles is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[storev1.ListFilesRequest]
-func (_e *CerbosStoreServiceHandler_Expecter) ListFiles(context1 any, request any) *CerbosStoreServiceHandler_ListFiles_Call {
-	return &CerbosStoreServiceHandler_ListFiles_Call{Call: _e.mock.On("ListFiles", context1, request)}
+//   - listFilesRequest *storev1.ListFilesRequest
+func (_e *CerbosStoreServiceHandler_Expecter) ListFiles(context1 any, listFilesRequest any) *CerbosStoreServiceHandler_ListFiles_Call {
+	return &CerbosStoreServiceHandler_ListFiles_Call{Call: _e.mock.On("ListFiles", context1, listFilesRequest)}
 }
 
-func (_c *CerbosStoreServiceHandler_ListFiles_Call) Run(run func(context1 context.Context, request *connect.Request[storev1.ListFilesRequest])) *CerbosStoreServiceHandler_ListFiles_Call {
+func (_c *CerbosStoreServiceHandler_ListFiles_Call) Run(run func(context1 context.Context, listFilesRequest *storev1.ListFilesRequest)) *CerbosStoreServiceHandler_ListFiles_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[storev1.ListFilesRequest]
+		var arg1 *storev1.ListFilesRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[storev1.ListFilesRequest])
+			arg1 = args[1].(*storev1.ListFilesRequest)
 		}
 		run(
 			arg0,
@@ -245,38 +244,38 @@ func (_c *CerbosStoreServiceHandler_ListFiles_Call) Run(run func(context1 contex
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_ListFiles_Call) Return(response *connect.Response[storev1.ListFilesResponse], err error) *CerbosStoreServiceHandler_ListFiles_Call {
-	_c.Call.Return(response, err)
+func (_c *CerbosStoreServiceHandler_ListFiles_Call) Return(listFilesResponse *storev1.ListFilesResponse, err error) *CerbosStoreServiceHandler_ListFiles_Call {
+	_c.Call.Return(listFilesResponse, err)
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_ListFiles_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[storev1.ListFilesRequest]) (*connect.Response[storev1.ListFilesResponse], error)) *CerbosStoreServiceHandler_ListFiles_Call {
+func (_c *CerbosStoreServiceHandler_ListFiles_Call) RunAndReturn(run func(context1 context.Context, listFilesRequest *storev1.ListFilesRequest) (*storev1.ListFilesResponse, error)) *CerbosStoreServiceHandler_ListFiles_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ModifyFiles provides a mock function for the type CerbosStoreServiceHandler
-func (_mock *CerbosStoreServiceHandler) ModifyFiles(context1 context.Context, request *connect.Request[storev1.ModifyFilesRequest]) (*connect.Response[storev1.ModifyFilesResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *CerbosStoreServiceHandler) ModifyFiles(context1 context.Context, modifyFilesRequest *storev1.ModifyFilesRequest) (*storev1.ModifyFilesResponse, error) {
+	ret := _mock.Called(context1, modifyFilesRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ModifyFiles")
 	}
 
-	var r0 *connect.Response[storev1.ModifyFilesResponse]
+	var r0 *storev1.ModifyFilesResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.ModifyFilesRequest]) (*connect.Response[storev1.ModifyFilesResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.ModifyFilesRequest) (*storev1.ModifyFilesResponse, error)); ok {
+		return returnFunc(context1, modifyFilesRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.ModifyFilesRequest]) *connect.Response[storev1.ModifyFilesResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.ModifyFilesRequest) *storev1.ModifyFilesResponse); ok {
+		r0 = returnFunc(context1, modifyFilesRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[storev1.ModifyFilesResponse])
+			r0 = ret.Get(0).(*storev1.ModifyFilesResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[storev1.ModifyFilesRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *storev1.ModifyFilesRequest) error); ok {
+		r1 = returnFunc(context1, modifyFilesRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -290,20 +289,20 @@ type CerbosStoreServiceHandler_ModifyFiles_Call struct {
 
 // ModifyFiles is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[storev1.ModifyFilesRequest]
-func (_e *CerbosStoreServiceHandler_Expecter) ModifyFiles(context1 any, request any) *CerbosStoreServiceHandler_ModifyFiles_Call {
-	return &CerbosStoreServiceHandler_ModifyFiles_Call{Call: _e.mock.On("ModifyFiles", context1, request)}
+//   - modifyFilesRequest *storev1.ModifyFilesRequest
+func (_e *CerbosStoreServiceHandler_Expecter) ModifyFiles(context1 any, modifyFilesRequest any) *CerbosStoreServiceHandler_ModifyFiles_Call {
+	return &CerbosStoreServiceHandler_ModifyFiles_Call{Call: _e.mock.On("ModifyFiles", context1, modifyFilesRequest)}
 }
 
-func (_c *CerbosStoreServiceHandler_ModifyFiles_Call) Run(run func(context1 context.Context, request *connect.Request[storev1.ModifyFilesRequest])) *CerbosStoreServiceHandler_ModifyFiles_Call {
+func (_c *CerbosStoreServiceHandler_ModifyFiles_Call) Run(run func(context1 context.Context, modifyFilesRequest *storev1.ModifyFilesRequest)) *CerbosStoreServiceHandler_ModifyFiles_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[storev1.ModifyFilesRequest]
+		var arg1 *storev1.ModifyFilesRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[storev1.ModifyFilesRequest])
+			arg1 = args[1].(*storev1.ModifyFilesRequest)
 		}
 		run(
 			arg0,
@@ -313,38 +312,38 @@ func (_c *CerbosStoreServiceHandler_ModifyFiles_Call) Run(run func(context1 cont
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_ModifyFiles_Call) Return(response *connect.Response[storev1.ModifyFilesResponse], err error) *CerbosStoreServiceHandler_ModifyFiles_Call {
-	_c.Call.Return(response, err)
+func (_c *CerbosStoreServiceHandler_ModifyFiles_Call) Return(modifyFilesResponse *storev1.ModifyFilesResponse, err error) *CerbosStoreServiceHandler_ModifyFiles_Call {
+	_c.Call.Return(modifyFilesResponse, err)
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_ModifyFiles_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[storev1.ModifyFilesRequest]) (*connect.Response[storev1.ModifyFilesResponse], error)) *CerbosStoreServiceHandler_ModifyFiles_Call {
+func (_c *CerbosStoreServiceHandler_ModifyFiles_Call) RunAndReturn(run func(context1 context.Context, modifyFilesRequest *storev1.ModifyFilesRequest) (*storev1.ModifyFilesResponse, error)) *CerbosStoreServiceHandler_ModifyFiles_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ReplaceFiles provides a mock function for the type CerbosStoreServiceHandler
-func (_mock *CerbosStoreServiceHandler) ReplaceFiles(context1 context.Context, request *connect.Request[storev1.ReplaceFilesRequest]) (*connect.Response[storev1.ReplaceFilesResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *CerbosStoreServiceHandler) ReplaceFiles(context1 context.Context, replaceFilesRequest *storev1.ReplaceFilesRequest) (*storev1.ReplaceFilesResponse, error) {
+	ret := _mock.Called(context1, replaceFilesRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ReplaceFiles")
 	}
 
-	var r0 *connect.Response[storev1.ReplaceFilesResponse]
+	var r0 *storev1.ReplaceFilesResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.ReplaceFilesRequest]) (*connect.Response[storev1.ReplaceFilesResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.ReplaceFilesRequest) (*storev1.ReplaceFilesResponse, error)); ok {
+		return returnFunc(context1, replaceFilesRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[storev1.ReplaceFilesRequest]) *connect.Response[storev1.ReplaceFilesResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *storev1.ReplaceFilesRequest) *storev1.ReplaceFilesResponse); ok {
+		r0 = returnFunc(context1, replaceFilesRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[storev1.ReplaceFilesResponse])
+			r0 = ret.Get(0).(*storev1.ReplaceFilesResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[storev1.ReplaceFilesRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *storev1.ReplaceFilesRequest) error); ok {
+		r1 = returnFunc(context1, replaceFilesRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -358,20 +357,20 @@ type CerbosStoreServiceHandler_ReplaceFiles_Call struct {
 
 // ReplaceFiles is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[storev1.ReplaceFilesRequest]
-func (_e *CerbosStoreServiceHandler_Expecter) ReplaceFiles(context1 any, request any) *CerbosStoreServiceHandler_ReplaceFiles_Call {
-	return &CerbosStoreServiceHandler_ReplaceFiles_Call{Call: _e.mock.On("ReplaceFiles", context1, request)}
+//   - replaceFilesRequest *storev1.ReplaceFilesRequest
+func (_e *CerbosStoreServiceHandler_Expecter) ReplaceFiles(context1 any, replaceFilesRequest any) *CerbosStoreServiceHandler_ReplaceFiles_Call {
+	return &CerbosStoreServiceHandler_ReplaceFiles_Call{Call: _e.mock.On("ReplaceFiles", context1, replaceFilesRequest)}
 }
 
-func (_c *CerbosStoreServiceHandler_ReplaceFiles_Call) Run(run func(context1 context.Context, request *connect.Request[storev1.ReplaceFilesRequest])) *CerbosStoreServiceHandler_ReplaceFiles_Call {
+func (_c *CerbosStoreServiceHandler_ReplaceFiles_Call) Run(run func(context1 context.Context, replaceFilesRequest *storev1.ReplaceFilesRequest)) *CerbosStoreServiceHandler_ReplaceFiles_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[storev1.ReplaceFilesRequest]
+		var arg1 *storev1.ReplaceFilesRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[storev1.ReplaceFilesRequest])
+			arg1 = args[1].(*storev1.ReplaceFilesRequest)
 		}
 		run(
 			arg0,
@@ -381,12 +380,12 @@ func (_c *CerbosStoreServiceHandler_ReplaceFiles_Call) Run(run func(context1 con
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_ReplaceFiles_Call) Return(response *connect.Response[storev1.ReplaceFilesResponse], err error) *CerbosStoreServiceHandler_ReplaceFiles_Call {
-	_c.Call.Return(response, err)
+func (_c *CerbosStoreServiceHandler_ReplaceFiles_Call) Return(replaceFilesResponse *storev1.ReplaceFilesResponse, err error) *CerbosStoreServiceHandler_ReplaceFiles_Call {
+	_c.Call.Return(replaceFilesResponse, err)
 	return _c
 }
 
-func (_c *CerbosStoreServiceHandler_ReplaceFiles_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[storev1.ReplaceFilesRequest]) (*connect.Response[storev1.ReplaceFilesResponse], error)) *CerbosStoreServiceHandler_ReplaceFiles_Call {
+func (_c *CerbosStoreServiceHandler_ReplaceFiles_Call) RunAndReturn(run func(context1 context.Context, replaceFilesRequest *storev1.ReplaceFilesRequest) (*storev1.ReplaceFilesResponse, error)) *CerbosStoreServiceHandler_ReplaceFiles_Call {
 	_c.Call.Return(run)
 	return _c
 }

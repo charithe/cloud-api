@@ -8,106 +8,94 @@
 package epdpv2connect
 
 import (
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 	context "context"
-	errors "errors"
 	v2 "github.com/cerbos/cloud-api/genpb/cerbos/cloud/epdp/v2"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// BundleServiceName is the fully-qualified name of the BundleService service.
 	BundleServiceName = "cerbos.cloud.epdp.v2.BundleService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// BundleServiceGetBundleProcedure is the fully-qualified name of the BundleService's GetBundle RPC.
+	// BundleServiceGetBundleProcedure is the procedure name of the BundleService's GetBundle RPC.
 	BundleServiceGetBundleProcedure = "/cerbos.cloud.epdp.v2.BundleService/GetBundle"
+)
+
+var (
+	bundleServiceGetBundleSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v2.File_cerbos_cloud_epdp_v2_epdp_proto.Services().ByName("BundleService").Methods().ByName("GetBundle"),
+			Procedure:        BundleServiceGetBundleProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
 )
 
 // BundleServiceClient is a client for the cerbos.cloud.epdp.v2.BundleService service.
 type BundleServiceClient interface {
-	GetBundle(context.Context, *connect.Request[v2.GetBundleRequest]) (*connect.Response[v2.GetBundleResponse], error)
+	GetBundle(context.Context, *v2.GetBundleRequest) (*v2.GetBundleResponse, error)
 }
 
-// NewBundleServiceClient constructs a client for the cerbos.cloud.epdp.v2.BundleService service. By
-// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
-// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
-// connect.WithGRPC() or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewBundleServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) BundleServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	bundleServiceMethods := v2.File_cerbos_cloud_epdp_v2_epdp_proto.Services().ByName("BundleService").Methods()
-	return &bundleServiceClient{
-		getBundle: connect.NewClient[v2.GetBundleRequest, v2.GetBundleResponse](
-			httpClient,
-			baseURL+BundleServiceGetBundleProcedure,
-			connect.WithSchema(bundleServiceMethods.ByName("GetBundle")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// bundleServiceClient implements BundleServiceClient.
-type bundleServiceClient struct {
-	getBundle *connect.Client[v2.GetBundleRequest, v2.GetBundleResponse]
-}
-
-// GetBundle calls cerbos.cloud.epdp.v2.BundleService.GetBundle.
-func (c *bundleServiceClient) GetBundle(ctx context.Context, req *connect.Request[v2.GetBundleRequest]) (*connect.Response[v2.GetBundleResponse], error) {
-	return c.getBundle.CallUnary(ctx, req)
+// NewBundleServiceClient constructs a client for the cerbos.cloud.epdp.v2.BundleService service.
+// Multiple service clients may share a single connect.Client.
+func NewBundleServiceClient(client *connect.Client) BundleServiceClient {
+	return &bundleServiceClient{client: client}
 }
 
 // BundleServiceHandler is an implementation of the cerbos.cloud.epdp.v2.BundleService service.
 type BundleServiceHandler interface {
-	GetBundle(context.Context, *connect.Request[v2.GetBundleRequest]) (*connect.Response[v2.GetBundleResponse], error)
+	GetBundle(context.Context, *v2.GetBundleRequest) (*v2.GetBundleResponse, error)
 }
 
-// NewBundleServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewBundleServiceHandler(svc BundleServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	bundleServiceMethods := v2.File_cerbos_cloud_epdp_v2_epdp_proto.Services().ByName("BundleService").Methods()
-	bundleServiceGetBundleHandler := connect.NewUnaryHandler(
-		BundleServiceGetBundleProcedure,
-		svc.GetBundle,
-		connect.WithSchema(bundleServiceMethods.ByName("GetBundle")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
+// RegisterBundleServiceHandler registers svc as the cerbos.cloud.epdp.v2.BundleService
+// implementation on server.
+func RegisterBundleServiceHandler(server *connect.Server, svc BundleServiceHandler) {
+	adapter := bundleServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: bundleServiceGetBundleSpec(), Handler: adapter.getBundle},
 	)
-	return "/cerbos.cloud.epdp.v2.BundleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case BundleServiceGetBundleProcedure:
-			bundleServiceGetBundleHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedBundleServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedBundleServiceHandler struct{}
 
-func (UnimplementedBundleServiceHandler) GetBundle(context.Context, *connect.Request[v2.GetBundleRequest]) (*connect.Response[v2.GetBundleResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cerbos.cloud.epdp.v2.BundleService.GetBundle is not implemented"))
+func (UnimplementedBundleServiceHandler) GetBundle(context.Context, *v2.GetBundleRequest) (*v2.GetBundleResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "cerbos.cloud.epdp.v2.BundleService.GetBundle is not implemented")
+}
+
+type bundleServiceClient struct {
+	client *connect.Client
+}
+
+func (c *bundleServiceClient) GetBundle(ctx context.Context, req *v2.GetBundleRequest) (*v2.GetBundleResponse, error) {
+	var res v2.GetBundleResponse
+	if err := c.client.CallUnary(ctx, bundleServiceGetBundleSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type bundleServiceHandler struct{ svc BundleServiceHandler }
+
+func (h bundleServiceHandler) getBundle(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v2.GetBundleRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetBundle(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

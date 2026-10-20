@@ -10,8 +10,8 @@ package mockbundlev2connect
 import (
 	"context"
 
-	"connectrpc.com/connect"
 	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/bundle/v2"
+	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/bundle/v2/bundlev2connect"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -52,27 +52,27 @@ func (_m *CerbosBundleServiceHandler) EXPECT() *CerbosBundleServiceHandler_Expec
 }
 
 // GetBundle provides a mock function for the type CerbosBundleServiceHandler
-func (_mock *CerbosBundleServiceHandler) GetBundle(context1 context.Context, request *connect.Request[bundlev2.GetBundleRequest]) (*connect.Response[bundlev2.GetBundleResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *CerbosBundleServiceHandler) GetBundle(context1 context.Context, getBundleRequest *bundlev2.GetBundleRequest) (*bundlev2.GetBundleResponse, error) {
+	ret := _mock.Called(context1, getBundleRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetBundle")
 	}
 
-	var r0 *connect.Response[bundlev2.GetBundleResponse]
+	var r0 *bundlev2.GetBundleResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[bundlev2.GetBundleRequest]) (*connect.Response[bundlev2.GetBundleResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *bundlev2.GetBundleRequest) (*bundlev2.GetBundleResponse, error)); ok {
+		return returnFunc(context1, getBundleRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[bundlev2.GetBundleRequest]) *connect.Response[bundlev2.GetBundleResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *bundlev2.GetBundleRequest) *bundlev2.GetBundleResponse); ok {
+		r0 = returnFunc(context1, getBundleRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[bundlev2.GetBundleResponse])
+			r0 = ret.Get(0).(*bundlev2.GetBundleResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[bundlev2.GetBundleRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *bundlev2.GetBundleRequest) error); ok {
+		r1 = returnFunc(context1, getBundleRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -86,20 +86,20 @@ type CerbosBundleServiceHandler_GetBundle_Call struct {
 
 // GetBundle is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[bundlev2.GetBundleRequest]
-func (_e *CerbosBundleServiceHandler_Expecter) GetBundle(context1 any, request any) *CerbosBundleServiceHandler_GetBundle_Call {
-	return &CerbosBundleServiceHandler_GetBundle_Call{Call: _e.mock.On("GetBundle", context1, request)}
+//   - getBundleRequest *bundlev2.GetBundleRequest
+func (_e *CerbosBundleServiceHandler_Expecter) GetBundle(context1 any, getBundleRequest any) *CerbosBundleServiceHandler_GetBundle_Call {
+	return &CerbosBundleServiceHandler_GetBundle_Call{Call: _e.mock.On("GetBundle", context1, getBundleRequest)}
 }
 
-func (_c *CerbosBundleServiceHandler_GetBundle_Call) Run(run func(context1 context.Context, request *connect.Request[bundlev2.GetBundleRequest])) *CerbosBundleServiceHandler_GetBundle_Call {
+func (_c *CerbosBundleServiceHandler_GetBundle_Call) Run(run func(context1 context.Context, getBundleRequest *bundlev2.GetBundleRequest)) *CerbosBundleServiceHandler_GetBundle_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[bundlev2.GetBundleRequest]
+		var arg1 *bundlev2.GetBundleRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[bundlev2.GetBundleRequest])
+			arg1 = args[1].(*bundlev2.GetBundleRequest)
 		}
 		run(
 			arg0,
@@ -109,27 +109,27 @@ func (_c *CerbosBundleServiceHandler_GetBundle_Call) Run(run func(context1 conte
 	return _c
 }
 
-func (_c *CerbosBundleServiceHandler_GetBundle_Call) Return(response *connect.Response[bundlev2.GetBundleResponse], err error) *CerbosBundleServiceHandler_GetBundle_Call {
-	_c.Call.Return(response, err)
+func (_c *CerbosBundleServiceHandler_GetBundle_Call) Return(getBundleResponse *bundlev2.GetBundleResponse, err error) *CerbosBundleServiceHandler_GetBundle_Call {
+	_c.Call.Return(getBundleResponse, err)
 	return _c
 }
 
-func (_c *CerbosBundleServiceHandler_GetBundle_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[bundlev2.GetBundleRequest]) (*connect.Response[bundlev2.GetBundleResponse], error)) *CerbosBundleServiceHandler_GetBundle_Call {
+func (_c *CerbosBundleServiceHandler_GetBundle_Call) RunAndReturn(run func(context1 context.Context, getBundleRequest *bundlev2.GetBundleRequest) (*bundlev2.GetBundleResponse, error)) *CerbosBundleServiceHandler_GetBundle_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // WatchBundle provides a mock function for the type CerbosBundleServiceHandler
-func (_mock *CerbosBundleServiceHandler) WatchBundle(context1 context.Context, bidiStream *connect.BidiStream[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse]) error {
-	ret := _mock.Called(context1, bidiStream)
+func (_mock *CerbosBundleServiceHandler) WatchBundle(context1 context.Context, cerbosBundleServiceWatchBundleServerStream bundlev2connect.CerbosBundleServiceWatchBundleServerStream) error {
+	ret := _mock.Called(context1, cerbosBundleServiceWatchBundleServerStream)
 
 	if len(ret) == 0 {
 		panic("no return value specified for WatchBundle")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.BidiStream[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse]) error); ok {
-		r0 = returnFunc(context1, bidiStream)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, bundlev2connect.CerbosBundleServiceWatchBundleServerStream) error); ok {
+		r0 = returnFunc(context1, cerbosBundleServiceWatchBundleServerStream)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -143,20 +143,20 @@ type CerbosBundleServiceHandler_WatchBundle_Call struct {
 
 // WatchBundle is a helper method to define mock.On call
 //   - context1 context.Context
-//   - bidiStream *connect.BidiStream[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse]
-func (_e *CerbosBundleServiceHandler_Expecter) WatchBundle(context1 any, bidiStream any) *CerbosBundleServiceHandler_WatchBundle_Call {
-	return &CerbosBundleServiceHandler_WatchBundle_Call{Call: _e.mock.On("WatchBundle", context1, bidiStream)}
+//   - cerbosBundleServiceWatchBundleServerStream bundlev2connect.CerbosBundleServiceWatchBundleServerStream
+func (_e *CerbosBundleServiceHandler_Expecter) WatchBundle(context1 any, cerbosBundleServiceWatchBundleServerStream any) *CerbosBundleServiceHandler_WatchBundle_Call {
+	return &CerbosBundleServiceHandler_WatchBundle_Call{Call: _e.mock.On("WatchBundle", context1, cerbosBundleServiceWatchBundleServerStream)}
 }
 
-func (_c *CerbosBundleServiceHandler_WatchBundle_Call) Run(run func(context1 context.Context, bidiStream *connect.BidiStream[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse])) *CerbosBundleServiceHandler_WatchBundle_Call {
+func (_c *CerbosBundleServiceHandler_WatchBundle_Call) Run(run func(context1 context.Context, cerbosBundleServiceWatchBundleServerStream bundlev2connect.CerbosBundleServiceWatchBundleServerStream)) *CerbosBundleServiceHandler_WatchBundle_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.BidiStream[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse]
+		var arg1 bundlev2connect.CerbosBundleServiceWatchBundleServerStream
 		if args[1] != nil {
-			arg1 = args[1].(*connect.BidiStream[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse])
+			arg1 = args[1].(bundlev2connect.CerbosBundleServiceWatchBundleServerStream)
 		}
 		run(
 			arg0,
@@ -171,7 +171,7 @@ func (_c *CerbosBundleServiceHandler_WatchBundle_Call) Return(err error) *Cerbos
 	return _c
 }
 
-func (_c *CerbosBundleServiceHandler_WatchBundle_Call) RunAndReturn(run func(context1 context.Context, bidiStream *connect.BidiStream[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse]) error) *CerbosBundleServiceHandler_WatchBundle_Call {
+func (_c *CerbosBundleServiceHandler_WatchBundle_Call) RunAndReturn(run func(context1 context.Context, cerbosBundleServiceWatchBundleServerStream bundlev2connect.CerbosBundleServiceWatchBundleServerStream) error) *CerbosBundleServiceHandler_WatchBundle_Call {
 	_c.Call.Return(run)
 	return _c
 }

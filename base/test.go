@@ -10,5 +10,5 @@ func ResetCircuitBreaker() {
 }
 
 func (c Client) BypassCircuitBreaker() {
-	c.circuitBreaker.enabled = false
+	(*c.circuitBreakerEnabled) = false
 }

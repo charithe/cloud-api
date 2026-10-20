@@ -27,8 +27,9 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
-	"connectrpc.com/grpcreflect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
+	"connectrpc.com/grpcreflect/v2"
 	"github.com/Shopify/toxiproxy/v2"
 	toxiclient "github.com/Shopify/toxiproxy/v2/client"
 	"github.com/go-logr/logr/testr"
@@ -46,7 +47,6 @@ import (
 	"github.com/cerbos/cloud-api/bundle"
 	"github.com/cerbos/cloud-api/credentials"
 	"github.com/cerbos/cloud-api/crypto/stream"
-	apikeyv1 "github.com/cerbos/cloud-api/genpb/cerbos/cloud/apikey/v1"
 	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/apikey/v1/apikeyv1connect"
 	bundlev2 "github.com/cerbos/cloud-api/genpb/cerbos/cloud/bundle/v2"
 	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/bundle/v2/bundlev2connect"
@@ -54,6 +54,7 @@ import (
 	"github.com/cerbos/cloud-api/hub"
 	mockapikeyv1connect "github.com/cerbos/cloud-api/test/mocks/genpb/cerbos/cloud/apikey/v1/apikeyv1connect"
 	mockbundlev2connect "github.com/cerbos/cloud-api/test/mocks/genpb/cerbos/cloud/bundle/v2/bundlev2connect"
+	"github.com/cerbos/cloud-api/test/testserver"
 )
 
 var pdpIdentifer = &pdpv1.Identifier{
@@ -163,12 +164,12 @@ func TestGetBundle(t *testing.T) {
 					client, _ := mkClient(t, server.URL, server.Certificate())
 					wantChecksum := checksum(t, filepath.Join("testdata", "bundle1.crbp"))
 
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					wantEncryptionKey := []byte("secret")
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								InputHash:     hash("input"),
 								OutputHash:    wantChecksum,
@@ -182,7 +183,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil).Times(3)
+						}, nil).Times(3)
 
 					for range 3 {
 						file, haveBundleType, encryptionKey, err := client.GetBundle(t.Context(), tc.source)
@@ -211,11 +212,11 @@ func TestGetBundle(t *testing.T) {
 					client, _ := mkClient(t, server.URL, server.Certificate())
 					wantChecksum := checksum(t, filepath.Join("testdata", "bundle1.crbp"))
 
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								InputHash:     hash("input"),
 								OutputHash:    wantChecksum,
@@ -232,7 +233,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil)
+						}, nil)
 
 					file, haveBundleType, _, err := client.GetBundle(t.Context(), tc.source)
 					require.NoError(t, err)
@@ -255,11 +256,11 @@ func TestGetBundle(t *testing.T) {
 					client, _ := mkClient(t, server.URL, server.Certificate())
 					wantChecksum := checksum(t, filepath.Join("testdata", "bundle1.crbp"))
 
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								OutputHash: wantChecksum,
 								Segments: []*bundlev2.BundleInfo_Segment{
@@ -281,7 +282,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil).Times(3)
+						}, nil).Times(3)
 
 					for range 3 {
 						file, haveBundleType, _, err := client.GetBundle(t.Context(), tc.source)
@@ -310,13 +311,13 @@ func TestGetBundle(t *testing.T) {
 
 					client, _ := mkClient(t, server.URL, server.Certificate())
 
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					// first call returns bundle1
 					wantChecksum1 := checksum(t, filepath.Join("testdata", "bundle1.crbp"))
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								InputHash:     hash("input"),
 								OutputHash:    wantChecksum1,
@@ -340,7 +341,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil).Times(3)
+						}, nil).Times(3)
 
 					for range 3 {
 						file1, haveBundleType, _, err := client.GetBundle(t.Context(), tc.source)
@@ -358,8 +359,8 @@ func TestGetBundle(t *testing.T) {
 					// second call returns bundle2. segment_00 and segment_01 are identical for both bundle1 and bundle2.
 					wantChecksum2 := checksum(t, filepath.Join("testdata", "bundle2.crbp"))
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								InputHash:     hash("input"),
 								OutputHash:    wantChecksum2,
@@ -393,7 +394,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil).Times(3)
+						}, nil).Times(3)
 
 					for range 3 {
 						file2, haveBundleType, _, err := client.GetBundle(t.Context(), tc.source)
@@ -428,11 +429,11 @@ func TestGetBundle(t *testing.T) {
 					client, _ := mkClient(t, server.URL, server.Certificate())
 					wantChecksum := checksum(t, filepath.Join("testdata", "bundle1.crbp"))
 
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								InputHash:     hash("input"),
 								OutputHash:    wantChecksum,
@@ -450,7 +451,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil).Once()
+						}, nil).Once()
 
 					_, _, _, err := client.GetBundle(t.Context(), tc.source)
 					require.Error(t, err)
@@ -470,11 +471,11 @@ func TestGetBundle(t *testing.T) {
 					client, _ := mkClient(t, server.URL, server.Certificate())
 					wantChecksum := checksum(t, filepath.Join("testdata", "bundle1.crbp"))
 
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								InputHash:     hash("input"),
 								OutputHash:    wantChecksum,
@@ -498,7 +499,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil).Once()
+						}, nil).Once()
 
 					_, _, _, err := client.GetBundle(t.Context(), tc.source)
 					require.Error(t, err)
@@ -517,11 +518,11 @@ func TestGetBundle(t *testing.T) {
 
 					client, _ := mkClient(t, server.URL, server.Certificate())
 
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								InputHash:     hash("input"),
 								OutputHash:    checksum(t, filepath.Join("testdata", "bundle1.crbp")),
@@ -535,7 +536,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil).Once()
+						}, nil).Once()
 
 					_, _, _, err := client.GetBundle(t.Context(), tc.source)
 					require.Error(t, err)
@@ -552,11 +553,11 @@ func TestGetBundle(t *testing.T) {
 
 					client, _ := mkClient(t, server.URL, server.Certificate())
 
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					mockBundleSvc.EXPECT().
-						GetBundle(mock.Anything, mock.MatchedBy(getBundleReq(tc.source))).
-						Return(connect.NewResponse(&bundlev2.GetBundleResponse{
+						GetBundle(mock.Anything, matchGetBundleReq(tc.source)).
+						Return(&bundlev2.GetBundleResponse{
 							BundleInfo: bundleInfo(tc.source, &bundlev2.BundleInfo{
 								InputHash:     hash("input"),
 								OutputHash:    []byte{0xba, 0xd1},
@@ -570,7 +571,7 @@ func TestGetBundle(t *testing.T) {
 								},
 								BundleType: &bundleType,
 							}),
-						}), nil).Once()
+						}, nil).Once()
 
 					_, _, _, err := client.GetBundle(t.Context(), tc.source)
 					require.Error(t, err)
@@ -585,8 +586,8 @@ func TestGetBundle(t *testing.T) {
 					client, _ := mkClient(t, server.URL, server.Certificate())
 
 					mockAPIKeySvc.EXPECT().
-						IssueAccessToken(mock.Anything, mock.MatchedBy(issueAccessTokenRequest())).
-						Return(nil, connect.NewError(connect.CodeUnauthenticated, errors.New("🙅")))
+						IssueAccessToken(mock.Anything, testserver.MatchIssueAccessTokenRequest()).
+						Return(nil, connect.NewError(connect.CodeUnauthenticated, "🙅"))
 
 					_, _, _, err := client.GetBundle(t.Context(), tc.source)
 					require.Error(t, err)
@@ -597,14 +598,14 @@ func TestGetBundle(t *testing.T) {
 	}
 }
 
-func getBundleReq(source bundle.Source) func(*connect.Request[bundlev2.GetBundleRequest]) bool {
-	return func(req *connect.Request[bundlev2.GetBundleRequest]) bool {
+func matchGetBundleReq(source bundle.Source) any {
+	return mock.MatchedBy(func(req *bundlev2.GetBundleRequest) bool {
 		return cmp.Equal(&bundlev2.GetBundleRequest{
 			PdpId:      pdpIdentifer,
 			Source:     source.ToProto(),
 			BundleType: bundlev2.BundleType_BUNDLE_TYPE_RULE_TABLE.Enum(),
-		}, req.Msg, protocmp.Transform())
-	}
+		}, req, protocmp.Transform())
+	})
 }
 
 func bundleInfo(source bundle.Source, info *bundlev2.BundleInfo) *bundlev2.BundleInfo {
@@ -652,7 +653,7 @@ func TestWatchBundle(t *testing.T) {
 
 					ctx, cancelFn := context.WithCancel(t.Context())
 					t.Cleanup(cancelFn)
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					handle, err := client.WatchBundle(ctx, tc.source)
 					require.NoError(t, err, "Failed to call RPC")
@@ -725,7 +726,7 @@ func TestWatchBundle(t *testing.T) {
 
 					ctx, cancelFn := context.WithCancel(t.Context())
 					t.Cleanup(cancelFn)
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					handle, err := client.WatchBundle(ctx, tc.source)
 					require.NoError(t, err, "Failed to call RPC")
@@ -764,14 +765,14 @@ func TestWatchBundle(t *testing.T) {
 
 					ctx, cancelFn := context.WithCancel(t.Context())
 					t.Cleanup(cancelFn)
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					handle, err := client.WatchBundle(ctx, tc.source)
 					require.NoError(t, err, "Failed to call RPC")
 					eventStream := handle.ServerEvents()
 
 					mockWatchSvc.requireRequestReceived(t, mkWatchBundleStartReq(tc.source))
-					mockWatchSvc.respondWithError(connect.NewError(connect.CodeNotFound, errors.New(" bundle not found")))
+					mockWatchSvc.respondWithError(connect.NewError(connect.CodeNotFound, " bundle not found"))
 
 					haveEvent := mustPopFromChan(t, eventStream)
 					require.Equal(t, bundle.ServerEventError, haveEvent.Kind, "Unexpected event kind")
@@ -791,7 +792,7 @@ func TestWatchBundle(t *testing.T) {
 
 					ctx, cancelFn := context.WithCancel(t.Context())
 					t.Cleanup(cancelFn)
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					handle, err := client.WatchBundle(ctx, tc.source)
 					require.NoError(t, err, "Failed to call RPC")
@@ -838,7 +839,7 @@ func TestWatchBundle(t *testing.T) {
 
 					ctx, cancelFn := context.WithCancel(t.Context())
 					t.Cleanup(cancelFn)
-					expectIssueAccessToken(mockAPIKeySvc)
+					testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 					handle, err := client.WatchBundle(ctx, tc.source)
 					require.NoError(t, err, "Failed to call RPC")
@@ -882,8 +883,8 @@ func TestWatchBundle(t *testing.T) {
 					client, _ := mkClient(t, server.URL, server.Certificate())
 
 					mockAPIKeySvc.EXPECT().
-						IssueAccessToken(mock.Anything, mock.MatchedBy(issueAccessTokenRequest())).
-						Return(nil, connect.NewError(connect.CodeUnauthenticated, errors.New("🙅")))
+						IssueAccessToken(mock.Anything, testserver.MatchIssueAccessTokenRequest()).
+						Return(nil, connect.NewError(connect.CodeUnauthenticated, "🙅"))
 
 					_, err := client.WatchBundle(t.Context(), bundle.DeploymentID("PJX7SLDX8SNG"))
 					require.Error(t, err)
@@ -982,7 +983,7 @@ func TestNetworkIssues(t *testing.T) {
 
 		ctx, cancelFn := context.WithCancel(t.Context())
 		t.Cleanup(cancelFn)
-		expectIssueAccessToken(mockAPIKeySvc)
+		testserver.ExpectAPIKeySuccess(t, mockAPIKeySvc)
 
 		source := bundle.DeploymentID("PJX7SLDX8SNG")
 
@@ -1023,32 +1024,22 @@ func TestNetworkIssues(t *testing.T) {
 func startTestServer(t *testing.T, mockAPIKeySvc apikeyv1connect.ApiKeyServiceHandler, mockBundleSvc bundlev2connect.CerbosBundleServiceHandler) (*httptest.Server, *downloadCounter) {
 	t.Helper()
 
-	compress1KB := connect.WithCompressMinBytes(1024)
 	fileHandler := http.FileServer(http.Dir("testdata"))
-	apiKeyPath, apiKeySvcHandler := apikeyv1connect.NewApiKeyServiceHandler(mockAPIKeySvc, compress1KB)
-	bundlePath, bundleSvcHandler := bundlev2connect.NewCerbosBundleServiceHandler(mockBundleSvc, connect.WithInterceptors(authCheck{}), compress1KB)
+	mux := http.NewServeMux()
+
+	apiKeyServer := connect.NewServer(testserver.NewLogRequests(t))
+	apikeyv1connect.RegisterApiKeyServiceHandler(apiKeyServer, mockAPIKeySvc)
+	grpcreflect.Register(apiKeyServer)
+	connecthttp.Mount(mux, apiKeyServer, testserver.ConnectOptions()...)
+
+	bundleServer := connect.NewServer(testserver.ConnectInterceptors()...)
+	bundlev2connect.RegisterCerbosBundleServiceHandler(bundleServer, mockBundleSvc)
+	connecthttp.Mount(mux, bundleServer, testserver.ConnectOptions()...)
 
 	counter := newDownloadCounter()
 
-	logRequests := func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Logf("REQUEST: %s", r.URL)
-			h.ServeHTTP(w, r)
-		})
-	}
-	mux := http.NewServeMux()
-	mux.Handle(apiKeyPath, logRequests(apiKeySvcHandler))
-	mux.Handle(bundlePath, logRequests(bundleSvcHandler))
 	mux.Handle("/files/", http.StripPrefix("/files/", counter.wrap(fileHandler)))
 	mux.Handle("/bootstrap/", counter.wrap(fileHandler))
-	mux.Handle(grpcreflect.NewHandlerV1(
-		grpcreflect.NewStaticReflector(bundlev2connect.CerbosBundleServiceName),
-		compress1KB,
-	))
-	mux.Handle(grpcreflect.NewHandlerV1Alpha(
-		grpcreflect.NewStaticReflector(bundlev2connect.CerbosBundleServiceName),
-		compress1KB,
-	))
 
 	s := httptest.NewUnstartedServer(mux)
 	protocols := new(http.Protocols)
@@ -1220,7 +1211,7 @@ func newMockBundleWatchService() *mockBundleWatchService {
 	}
 }
 
-func (m *mockBundleWatchService) WatchBundle(ctx context.Context, stream *connect.BidiStream[bundlev2.WatchBundleRequest, bundlev2.WatchBundleResponse]) error {
+func (m *mockBundleWatchService) WatchBundle(ctx context.Context, stream bundlev2connect.CerbosBundleServiceWatchBundleServerStream) error {
 	// Wait for first message from client (start watch)
 	msg, err := stream.Receive()
 	m.requests <- haveWatchReq{msg: msg, err: err}
@@ -1320,33 +1311,8 @@ func (m *mockBundleWatchService) requireRequestReceived(t *testing.T, wantReq *b
 		cmp.Diff(wantReq, haveReq.msg, protocmp.Transform(), protocmp.IgnoreFields(&bundlev2.WatchBundleRequest_Heartbeat{}, "timestamp")))
 }
 
-func (m *mockBundleWatchService) GetBundle(_ context.Context, _ *connect.Request[bundlev2.GetBundleRequest]) (*connect.Response[bundlev2.GetBundleResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unimplemented"))
-}
-
-type authCheck struct{}
-
-func (ac authCheck) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		if req.Header().Get(base.AuthTokenHeader) != "access-token" {
-			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid or missing access token"))
-		}
-		return next(ctx, req)
-	})
-}
-
-func (ac authCheck) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return next
-}
-
-func (ac authCheck) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		if conn.RequestHeader().Get(base.AuthTokenHeader) != "access-token" {
-			return connect.NewError(connect.CodeUnauthenticated, errors.New("invalid or missing access token"))
-		}
-
-		return next(ctx, conn)
-	})
+func (m *mockBundleWatchService) GetBundle(_ context.Context, _ *bundlev2.GetBundleRequest) (*bundlev2.GetBundleResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "unimplemented")
 }
 
 type downloadCounter struct {
@@ -1388,21 +1354,6 @@ func hash(data string) []byte {
 	h := sha256.New()
 	h.Write([]byte(data))
 	return h.Sum(nil)
-}
-
-func expectIssueAccessToken(mockAPIKeySvc *mockapikeyv1connect.ApiKeyServiceHandler) {
-	mockAPIKeySvc.EXPECT().
-		IssueAccessToken(mock.Anything, mock.MatchedBy(issueAccessTokenRequest())).
-		Return(connect.NewResponse(&apikeyv1.IssueAccessTokenResponse{
-			AccessToken: "access-token",
-			ExpiresIn:   durationpb.New(1 * time.Minute),
-		}), nil)
-}
-
-func issueAccessTokenRequest() func(*connect.Request[apikeyv1.IssueAccessTokenRequest]) bool {
-	return func(req *connect.Request[apikeyv1.IssueAccessTokenRequest]) bool {
-		return req.Msg.ClientId == "client-id" && req.Msg.ClientSecret == "client-secret"
-	}
 }
 
 func randomCommit() string {

@@ -9,13 +9,13 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -30,32 +30,29 @@ import (
 	mockapikeyv1connect "github.com/cerbos/cloud-api/test/mocks/genpb/cerbos/cloud/apikey/v1/apikeyv1connect"
 )
 
-func ConnectOptions() []connect.Option {
-	compress1KB := connect.WithCompressMinBytes(1024)
-	authInterceptor := connect.WithInterceptors(authCheck{})
-	return []connect.Option{authInterceptor, compress1KB}
+func ConnectOptions() []connecthttp.Option {
+	return []connecthttp.Option{connecthttp.WithCompressMinBytes(1024)}
 }
 
-func LogRequests(t *testing.T, h http.Handler) http.Handler {
-	t.Helper()
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Logf("REQUEST: %s", r.URL)
-		h.ServeHTTP(w, r)
-	})
+func ConnectInterceptors() []connect.ServerInterceptor {
+	return []connect.ServerInterceptor{newAuthCheck()}
 }
 
-func Start(t *testing.T, handlers map[string]http.Handler, creds *credentials.Credentials) (*mockapikeyv1connect.ApiKeyServiceHandler, *hub.Hub) {
+func Start(t *testing.T, handlers []func(*connect.Server), creds *credentials.Credentials) (*mockapikeyv1connect.ApiKeyServiceHandler, *hub.Hub) {
 	t.Helper()
 
 	mockAPIKeySvc := mockapikeyv1connect.NewApiKeyServiceHandler(t)
-	apiKeyPath, apiKeySvcHandler := apikeyv1connect.NewApiKeyServiceHandler(mockAPIKeySvc)
+	apiKeyServer := connect.NewServer(NewLogRequests(t))
+	apikeyv1connect.RegisterApiKeyServiceHandler(apiKeyServer, mockAPIKeySvc)
+
+	otherServer := connect.NewServer(NewLogRequests(t), newAuthCheck())
+	for _, handler := range handlers {
+		handler(otherServer)
+	}
 
 	mux := http.NewServeMux()
-	mux.Handle(apiKeyPath, LogRequests(t, apiKeySvcHandler))
-	for path, handler := range handlers {
-		mux.Handle(path, handler)
-	}
+	connecthttp.Mount(mux, apiKeyServer)
+	connecthttp.Mount(mux, otherServer)
 
 	s := httptest.NewUnstartedServer(mux)
 	protocols := new(http.Protocols)
@@ -122,53 +119,57 @@ func newHub(t *testing.T, server *httptest.Server, creds *credentials.Credential
 
 const expectedAuthToken = "access-token"
 
-type authCheck struct{}
+func newAuthCheck() connect.ServerInterceptor {
+	return func(next connect.ServerFunc) connect.ServerFunc {
+		return func(ctx context.Context, spec connect.Spec, stream connect.ServerStream) error {
+			info, _ := connect.CallInfoForServerContext(ctx)
+			if info.RequestHeader().Get(base.AuthTokenHeader) != expectedAuthToken {
+				return connect.NewError(connect.CodeUnauthenticated, "invalid or missing access token")
+			}
 
-func (ac authCheck) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		if req.Header().Get(base.AuthTokenHeader) != expectedAuthToken {
-			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid or missing access token"))
+			return next(ctx, spec, stream)
 		}
-		return next(ctx, req)
-	})
+	}
 }
 
-func (ac authCheck) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return next
-}
+func NewLogRequests(t *testing.T) connect.ServerInterceptor {
+	t.Helper()
 
-func (ac authCheck) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		if conn.RequestHeader().Get(base.AuthTokenHeader) != expectedAuthToken {
-			return connect.NewError(connect.CodeUnauthenticated, errors.New("invalid or missing access token"))
+	return func(next connect.ServerFunc) connect.ServerFunc {
+		return func(ctx context.Context, spec connect.Spec, stream connect.ServerStream) error {
+			t.Logf("REQUEST: %s", spec.Procedure)
+			if err := next(ctx, spec, stream); err != nil {
+				t.Logf("ERROR for %s: %+v", spec.Procedure, err)
+				return err
+			}
+
+			return nil
 		}
-
-		return next(ctx, conn)
-	})
+	}
 }
 
 func ExpectAPIKeySuccess(t *testing.T, mockAPIKeySvc *mockapikeyv1connect.ApiKeyServiceHandler) {
 	t.Helper()
 
 	mockAPIKeySvc.EXPECT().
-		IssueAccessToken(mock.Anything, mock.MatchedBy(issueAccessTokenRequest())).
-		Return(connect.NewResponse(&apikeyv1.IssueAccessTokenResponse{
+		IssueAccessToken(mock.Anything, MatchIssueAccessTokenRequest()).
+		Return(&apikeyv1.IssueAccessTokenResponse{
 			AccessToken: expectedAuthToken,
 			ExpiresIn:   durationpb.New(1 * time.Minute),
-		}), nil)
+		}, nil)
 }
 
 func ExpectAPIKeyFailure(t *testing.T, mockAPIKeySvc *mockapikeyv1connect.ApiKeyServiceHandler) {
 	t.Helper()
 
 	mockAPIKeySvc.EXPECT().
-		IssueAccessToken(mock.Anything, mock.MatchedBy(issueAccessTokenRequest())).
-		Return(nil, connect.NewError(connect.CodeUnauthenticated, errors.New("unauthenticated"))).
+		IssueAccessToken(mock.Anything, MatchIssueAccessTokenRequest()).
+		Return(nil, connect.NewError(connect.CodeUnauthenticated, "unauthenticated")).
 		Once()
 }
 
-func issueAccessTokenRequest() func(*connect.Request[apikeyv1.IssueAccessTokenRequest]) bool {
-	return func(req *connect.Request[apikeyv1.IssueAccessTokenRequest]) bool {
-		return req.Msg.ClientId == "client-id" && req.Msg.ClientSecret == "client-secret"
-	}
+func MatchIssueAccessTokenRequest() any {
+	return mock.MatchedBy(func(req *apikeyv1.IssueAccessTokenRequest) bool {
+		return req.GetClientId() == "client-id" && req.GetClientSecret() == "client-secret"
+	})
 }

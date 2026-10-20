@@ -9,11 +9,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/go-logr/logr"
 	"github.com/zalando/go-keyring"
 
@@ -44,9 +46,9 @@ type tokenSetter struct {
 	invalidCredentials bool
 }
 
-func newTokenSetter(conf ClientConf, httpClient *http.Client, clientOptions ...connect.ClientOption) *tokenSetter {
+func newTokenSetter(conf ClientConf, httpClient *http.Client, clientOptions ...connecthttp.Option) *tokenSetter {
 	return &tokenSetter{
-		apiKeyClient:     apikeyv1connect.NewApiKeyServiceClient(httpClient, conf.APIEndpoint, clientOptions...),
+		apiKeyClient:     apikeyv1connect.NewApiKeyServiceClient(connect.NewClient(connecthttp.NewTransport(httpClient, conf.APIEndpoint, clientOptions...))),
 		clientID:         conf.Credentials.ClientID,
 		clientSecret:     conf.Credentials.ClientSecret,
 		savedCredentials: conf.Credentials.SavedCredentials,
@@ -54,7 +56,7 @@ func newTokenSetter(conf ClientConf, httpClient *http.Client, clientOptions ...c
 	}
 }
 
-func (ts *tokenSetter) SetHeader(ctx context.Context, headers http.Header) error {
+func (ts *tokenSetter) SetHeader(ctx context.Context, headers *connect.Header) error {
 	accessToken, err := ts.authenticate(ctx)
 	if err != nil {
 		ts.logger.V(1).Error(err, "Failed to authenticate")
@@ -104,16 +106,16 @@ func (ts *tokenSetter) authenticate(ctx context.Context) (string, error) {
 		if expiresIn > earlyExpiry {
 			ts.accessToken = deviceToken.GetAccessToken()
 		} else {
-			var response *connect.Response[apikeyv1.RefreshDeviceTokenResponse]
-			response, err = ts.apiKeyClient.RefreshDeviceToken(ctx, connect.NewRequest(&apikeyv1.RefreshDeviceTokenRequest{
+			var response *apikeyv1.RefreshDeviceTokenResponse
+			response, err = ts.apiKeyClient.RefreshDeviceToken(ctx, &apikeyv1.RefreshDeviceTokenRequest{
 				DeviceToken: deviceToken,
-			}))
+			})
 			if err == nil {
-				ts.accessToken = response.Msg.GetDeviceToken().GetAccessToken()
+				ts.accessToken = response.GetDeviceToken().GetAccessToken()
 				ts.savedCredentials = &authv1.SavedCredentials{
 					ApiEndpoint: ts.savedCredentials.GetApiEndpoint(),
 					Credentials: &authv1.SavedCredentials_DeviceToken{
-						DeviceToken: response.Msg.GetDeviceToken(),
+						DeviceToken: response.GetDeviceToken(),
 					},
 				}
 				expiresIn = ts.savedCredentials.GetDeviceToken().GetExpiresAt().AsTime().Sub(time.Now().UTC())
@@ -122,14 +124,14 @@ func (ts *tokenSetter) authenticate(ctx context.Context) (string, error) {
 			}
 		}
 	} else {
-		var response *connect.Response[apikeyv1.IssueAccessTokenResponse]
-		response, err = ts.apiKeyClient.IssueAccessToken(ctx, connect.NewRequest(&apikeyv1.IssueAccessTokenRequest{
+		var response *apikeyv1.IssueAccessTokenResponse
+		response, err = ts.apiKeyClient.IssueAccessToken(ctx, &apikeyv1.IssueAccessTokenRequest{
 			ClientId:     ts.clientID,
 			ClientSecret: ts.clientSecret,
-		}))
+		})
 		if err == nil {
-			ts.accessToken = response.Msg.GetAccessToken()
-			expiresIn = response.Msg.ExpiresIn.AsDuration()
+			ts.accessToken = response.GetAccessToken()
+			expiresIn = response.ExpiresIn.AsDuration()
 		}
 	}
 
@@ -167,16 +169,23 @@ func DeviceLogin(ctx context.Context, apiEndpoint string, tlsConf *tls.Config) e
 
 func startDeviceRegistrationFlow(ctx context.Context, apiEndpoint string, tlsConf *tls.Config) (*authv1.SavedCredentials, error) {
 	httpClient := mkHTTPClient(ClientConf{TLS: tlsConf})
-	apiClient := apikeyv1connect.NewApiKeyServiceClient(httpClient, apiEndpoint)
-	stream, err := apiClient.RegisterDevice(ctx, connect.NewRequest(&apikeyv1.RegisterDeviceRequest{}))
+	apiClient := apikeyv1connect.NewApiKeyServiceClient(connect.NewClient(connecthttp.NewTransport(httpClient, apiEndpoint)))
+	stream, err := apiClient.RegisterDevice(ctx, &apikeyv1.RegisterDeviceRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to start device registration: %w", err)
 	}
 
 	defer stream.Close()
 
-	for stream.Receive() {
-		msg := stream.Msg()
+	for {
+		msg2, err := stream.Receive()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, fmt.Errorf("device registration failed: %w", err)
+		}
+		msg := msg2
 		switch m := msg.GetMessage().(type) {
 		case *apikeyv1.RegisterDeviceResponse_VerificationUrl:
 			fmt.Printf("Log in and connect this machine to your account by visiting %s\n", m.VerificationUrl) //nolint:forbidigo
@@ -195,20 +204,16 @@ func startDeviceRegistrationFlow(ctx context.Context, apiEndpoint string, tlsCon
 		}
 	}
 
-	if err := stream.Err(); err != nil {
-		return nil, fmt.Errorf("device registration failed: %w", err)
-	}
-
 	return nil, nil
 }
 
 func ClientLogin(ctx context.Context, apiEndpoint string, tlsConf *tls.Config, clientID, clientSecret string) error {
 	httpClient := mkHTTPClient(ClientConf{TLS: tlsConf})
-	apiClient := apikeyv1connect.NewApiKeyServiceClient(httpClient, apiEndpoint)
-	if _, err := apiClient.IssueAccessToken(ctx, connect.NewRequest(&apikeyv1.IssueAccessTokenRequest{
+	apiClient := apikeyv1connect.NewApiKeyServiceClient(connect.NewClient(connecthttp.NewTransport(httpClient, apiEndpoint)))
+	if _, err := apiClient.IssueAccessToken(ctx, &apikeyv1.IssueAccessTokenRequest{
 		ClientId:     clientID,
 		ClientSecret: clientSecret,
-	})); err != nil {
+	}); err != nil {
 		return fmt.Errorf("failed to authenticate: %w", err)
 	}
 

@@ -10,7 +10,6 @@ package mocklogsv1connect
 import (
 	"context"
 
-	"connectrpc.com/connect"
 	"github.com/cerbos/cloud-api/genpb/cerbos/cloud/logs/v1"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -52,27 +51,27 @@ func (_m *CerbosLogsServiceHandler) EXPECT() *CerbosLogsServiceHandler_Expecter 
 }
 
 // Ingest provides a mock function for the type CerbosLogsServiceHandler
-func (_mock *CerbosLogsServiceHandler) Ingest(context1 context.Context, request *connect.Request[logsv1.IngestRequest]) (*connect.Response[logsv1.IngestResponse], error) {
-	ret := _mock.Called(context1, request)
+func (_mock *CerbosLogsServiceHandler) Ingest(context1 context.Context, ingestRequest *logsv1.IngestRequest) (*logsv1.IngestResponse, error) {
+	ret := _mock.Called(context1, ingestRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Ingest")
 	}
 
-	var r0 *connect.Response[logsv1.IngestResponse]
+	var r0 *logsv1.IngestResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[logsv1.IngestRequest]) (*connect.Response[logsv1.IngestResponse], error)); ok {
-		return returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *logsv1.IngestRequest) (*logsv1.IngestResponse, error)); ok {
+		return returnFunc(context1, ingestRequest)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *connect.Request[logsv1.IngestRequest]) *connect.Response[logsv1.IngestResponse]); ok {
-		r0 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *logsv1.IngestRequest) *logsv1.IngestResponse); ok {
+		r0 = returnFunc(context1, ingestRequest)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connect.Response[logsv1.IngestResponse])
+			r0 = ret.Get(0).(*logsv1.IngestResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *connect.Request[logsv1.IngestRequest]) error); ok {
-		r1 = returnFunc(context1, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *logsv1.IngestRequest) error); ok {
+		r1 = returnFunc(context1, ingestRequest)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -86,20 +85,20 @@ type CerbosLogsServiceHandler_Ingest_Call struct {
 
 // Ingest is a helper method to define mock.On call
 //   - context1 context.Context
-//   - request *connect.Request[logsv1.IngestRequest]
-func (_e *CerbosLogsServiceHandler_Expecter) Ingest(context1 any, request any) *CerbosLogsServiceHandler_Ingest_Call {
-	return &CerbosLogsServiceHandler_Ingest_Call{Call: _e.mock.On("Ingest", context1, request)}
+//   - ingestRequest *logsv1.IngestRequest
+func (_e *CerbosLogsServiceHandler_Expecter) Ingest(context1 any, ingestRequest any) *CerbosLogsServiceHandler_Ingest_Call {
+	return &CerbosLogsServiceHandler_Ingest_Call{Call: _e.mock.On("Ingest", context1, ingestRequest)}
 }
 
-func (_c *CerbosLogsServiceHandler_Ingest_Call) Run(run func(context1 context.Context, request *connect.Request[logsv1.IngestRequest])) *CerbosLogsServiceHandler_Ingest_Call {
+func (_c *CerbosLogsServiceHandler_Ingest_Call) Run(run func(context1 context.Context, ingestRequest *logsv1.IngestRequest)) *CerbosLogsServiceHandler_Ingest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *connect.Request[logsv1.IngestRequest]
+		var arg1 *logsv1.IngestRequest
 		if args[1] != nil {
-			arg1 = args[1].(*connect.Request[logsv1.IngestRequest])
+			arg1 = args[1].(*logsv1.IngestRequest)
 		}
 		run(
 			arg0,
@@ -109,12 +108,12 @@ func (_c *CerbosLogsServiceHandler_Ingest_Call) Run(run func(context1 context.Co
 	return _c
 }
 
-func (_c *CerbosLogsServiceHandler_Ingest_Call) Return(response *connect.Response[logsv1.IngestResponse], err error) *CerbosLogsServiceHandler_Ingest_Call {
-	_c.Call.Return(response, err)
+func (_c *CerbosLogsServiceHandler_Ingest_Call) Return(ingestResponse *logsv1.IngestResponse, err error) *CerbosLogsServiceHandler_Ingest_Call {
+	_c.Call.Return(ingestResponse, err)
 	return _c
 }
 
-func (_c *CerbosLogsServiceHandler_Ingest_Call) RunAndReturn(run func(context1 context.Context, request *connect.Request[logsv1.IngestRequest]) (*connect.Response[logsv1.IngestResponse], error)) *CerbosLogsServiceHandler_Ingest_Call {
+func (_c *CerbosLogsServiceHandler_Ingest_Call) RunAndReturn(run func(context1 context.Context, ingestRequest *logsv1.IngestRequest) (*logsv1.IngestResponse, error)) *CerbosLogsServiceHandler_Ingest_Call {
 	_c.Call.Return(run)
 	return _c
 }
