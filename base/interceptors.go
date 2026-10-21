@@ -79,15 +79,14 @@ func newCircuitBreakerInterceptor(enabled *bool) connect.ClientInterceptor {
 				return next(ctx, spec)
 			}
 
-			resp, err := circuitBreaker.Get(func() (connect.ClientStream, error) {
-				return next(ctx, spec)
-			})
-
-			if errors.Is(err, circuitbreaker.ErrOpen) {
-				return resp, ErrTooManyFailures
+			// This error shouldn't go through the circuit breaker because only other interceptors can produce an error at this stage.
+			// Because the error here is always nil, the circuit breaker error streak gets broken and it never trips.
+			stream, err := next(ctx, spec)
+			if err != nil {
+				return stream, err
 			}
 
-			return &circuitBreakerClientStream{cb: circuitBreaker, ClientStream: resp}, err
+			return &circuitBreakerClientStream{cb: circuitBreaker, ClientStream: stream}, err
 		}
 	}
 }
@@ -111,7 +110,7 @@ func (cbcs *circuitBreakerClientStream) Receive(msg any) error {
 func newCircuitBreaker() failsafe.Executor[connect.ClientStream] {
 	return failsafe.With(
 		circuitbreaker.NewBuilder[connect.ClientStream]().
-			WithFailureRateThreshold(0.5, 5, 15*time.Second). // open circuit if >=5 requests have been made in the last 15 seconds and >=50% of them have failed
+			WithFailureRateThreshold(0.6, 5, 15*time.Second). // open circuit if >=5 requests have been made in the last 15 seconds and >=60% of them have failed
 			HandleIf(func(_ connect.ClientStream, err error) bool {
 				if err == nil {
 					return false
